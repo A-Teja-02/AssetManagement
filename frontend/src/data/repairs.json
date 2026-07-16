@@ -1,0 +1,126 @@
+[
+  {
+    "id": "REP00028",
+    "assetId": "LT0001",
+    "reportedBy": "EMP001",
+    "issue": "Battery not charging",
+    "description": "Laptop battery is not charging even when the charger is connected.",
+    "requestDate": "10 Jul 2026 10:30 AM",
+    "priority": "Medium",
+    "assignedTo": "IT Support Team",
+    "estimatedCompletion": "13 Jul 2026",
+    "status": "In Progress",
+    "updates": [
+      {
+        "date": "10 Jul 2026 11:15 AM",
+        "message": "Repair request created by Rakesh Reddy"
+      },
+      {
+        "date": "10 Jul 2026 02:20 PM",
+        "message": "Assigned to IT Support Team by Admin"
+      }
+    ]
+  },
+  {
+    "id": "REP00027",
+    "assetId": "MS0001",
+    "reportedBy": "EMP002",
+    "issue": "Scroll wheel not working",
+    "description": "The middle scroll wheel is unresponsive when scrolling down.",
+    "requestDate": "09 Jul 2026 09:30 AM",
+    "priority": "Low",
+    "assignedTo": "Hardware Support Team",
+    "estimatedCompletion": "12 Jul 2026",
+    "status": "Awaiting Parts",
+    "updates": [
+      {
+        "date": "09 Jul 2026 09:30 AM",
+        "message": "Repair request created by Rahul Sharma"
+      },
+      {
+        "date": "09 Jul 2026 11:00 AM",
+        "message": "Logged issue with vendor; scroll replacement wheels on order."
+      }
+    ]
+  },
+  {
+    "id": "REP00026",
+    "assetId": "MN0001",
+    "reportedBy": "EMP003",
+    "issue": "Flickering screen",
+    "description": "Display flashes on and off intermittently when connected to HDMI.",
+    "requestDate": "08 Jul 2026 02:00 PM",
+    "priority": "High",
+    "assignedTo": "IT Support Team",
+    "estimatedCompletion": "10 Jul 2026",
+    "status": "In Progress",
+    "updates": [
+      {
+        "date": "08 Jul 2026 02:00 PM",
+        "message": "Repair request created by Priya Singh"
+      }
+    ]
+  },
+  {
+    "id": "REP00025",
+    "assetId": "KB0001",
+    "reportedBy": "EMP004",
+    "issue": "Some keys not working",
+    "description": "Spacebar and Enter key do not register strokes.",
+    "requestDate": "07 Jul 2026 10:00 AM",
+    "priority": "Low",
+    "assignedTo": "IT Support Team",
+    "estimatedCompletion": "08 Jul 2026",
+    "status": "Completed",
+    "updates": [
+      {
+        "date": "07 Jul 2026 10:00 AM",
+        "message": "Repair request created by Amit Verma"
+      },
+      {
+        "date": "08 Jul 2026 04:30 PM",
+        "message": "Keyboard cleaned and contacts repaired. Marked as Available."
+      }
+    ]
+  },
+  {
+    "id": "REP00024",
+    "assetId": "HD0001",
+    "reportedBy": "EMP005",
+    "issue": "No sound in right ear",
+    "description": "No audio feedback from right speaker driver.",
+    "requestDate": "06 Jul 2026 01:15 PM",
+    "priority": "Medium",
+    "assignedTo": "Hardware Support Team",
+    "estimatedCompletion": "08 Jul 2026",
+    "status": "Completed",
+    "updates": [
+      {
+        "date": "06 Jul 2026 01:15 PM",
+        "message": "Repair request created by Neha Patel"
+      }
+    ]
+  },
+  {
+    "id": "REP00023",
+    "assetId": "PR0001",
+    "reportedBy": "EMP006",
+    "issue": "Paper jam",
+    "description": "Printer jams feed tray every time printing is initiated.",
+    "requestDate": "05 Jul 2026 11:00 AM",
+    "priority": "High",
+    "assignedTo": "IT Support Team",
+    "estimatedCompletion": "06 Jul 2026",
+    "status": "Cancelled",
+    "updates": [
+      {
+        "date": "05 Jul 2026 11:00 AM",
+        "message": "Repair request created by Vikram Reddy"
+      },
+      {
+        "date": "06 Jul 2026 09:30 AM",
+        "message": "Printer replaced by newer model. Repair cancelled."
+      }
+    ]
+  }
+]
