@@ -30,7 +30,8 @@ const AssignAsset = () => {
     employees, 
     assets, 
     assignAssets, 
-    activity 
+    activity,
+    showToast 
   } = useAssetManager();
 
   // Selected state

@@ -29,7 +29,8 @@ const EmployeeDashboard = () => {
     repairs, 
     activity, 
     addRepair,
-    logActivity 
+    logActivity,
+    showToast 
   } = useAssetManager();
 
   // Active Modals state

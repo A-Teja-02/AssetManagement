@@ -14,7 +14,8 @@ import {
   ChevronRight,
   X,
   PlusCircle,
-  Briefcase
+  Briefcase,
+  AlertTriangle
 } from 'lucide-react';
 import { useAssetManager } from '../hooks/useAssetManager';
 import MetricCard from '../components/MetricCard';

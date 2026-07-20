@@ -18,7 +18,8 @@ const ReturnAsset = () => {
     employees, 
     assets, 
     returnAssets, 
-    activity 
+    activity,
+    showToast 
   } = useAssetManager();
 
   // Selected Employee & Assets states
