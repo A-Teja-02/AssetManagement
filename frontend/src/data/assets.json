@@ -1,0 +1,98 @@
+[
+  {
+    "id": "LT0001",
+    "type": "Laptop",
+    "brand": "Dell",
+    "model": "Latitude 5440",
+    "serialNumber": "ABC12345",
+    "status": "Assigned",
+    "assignedTo": "EMP001",
+    "purchaseDate": "01 Jun 2024",
+    "warrantyEndDate": "01 Jun 2027",
+    "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=80&h=80&fit=crop"
+  },
+  {
+    "id": "MS0001",
+    "type": "Mouse",
+    "brand": "Logitech",
+    "model": "M185",
+    "serialNumber": "MOU98765",
+    "status": "Assigned",
+    "assignedTo": "EMP001",
+    "purchaseDate": "01 Jun 2024",
+    "warrantyEndDate": "01 Jun 2026",
+    "image": "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=80&h=80&fit=crop"
+  },
+  {
+    "id": "KB0001",
+    "type": "Keyboard",
+    "brand": "Dell",
+    "model": "KB216",
+    "serialNumber": "KB11223",
+    "status": "Available",
+    "assignedTo": null,
+    "purchaseDate": "15 May 2024",
+    "warrantyEndDate": "15 May 2026",
+    "image": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=80&h=80&fit=crop"
+  },
+  {
+    "id": "MN0001",
+    "type": "Monitor",
+    "brand": "Dell",
+    "model": "P2419H",
+    "serialNumber": "MON44556",
+    "status": "Assigned",
+    "assignedTo": "EMP003",
+    "purchaseDate": "10 Apr 2024",
+    "warrantyEndDate": "10 Apr 2026",
+    "image": "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=80&h=80&fit=crop"
+  },
+  {
+    "id": "HD0001",
+    "type": "Headset",
+    "brand": "HP",
+    "model": "H200",
+    "serialNumber": "HD77889",
+    "status": "Under Repair",
+    "assignedTo": null,
+    "purchaseDate": "20 Mar 2024",
+    "warrantyEndDate": "20 Mar 2026",
+    "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=80&h=80&fit=crop"
+  },
+  {
+    "id": "PR0001",
+    "type": "Printer",
+    "brand": "HP",
+    "model": "LaserJet 1020",
+    "serialNumber": "PR334455",
+    "status": "Available",
+    "assignedTo": null,
+    "purchaseDate": "05 Feb 2024",
+    "warrantyEndDate": "05 Feb 2026",
+    "image": "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=80&h=80&fit=crop"
+  },
+  {
+    "id": "DT0001",
+    "type": "Desktop",
+    "brand": "Dell",
+    "model": "OptiPlex 7010",
+    "serialNumber": "DT556677",
+    "status": "Assigned",
+    "assignedTo": "EMP002",
+    "purchaseDate": "12 Jan 2024",
+    "warrantyEndDate": "12 Jan 2027",
+    "image": "https://images.unsplash.com/photo-1547082299-de196ea013d6?w=80&h=80&fit=crop"
+  },
+  {
+    "id": "DS0001",
+    "type": "Docking Station",
+    "brand": "Dell",
+    "model": "WD19S",
+    "serialNumber": "DS667788",
+    "status": "Available",
+    "assignedTo": null,
+    "purchaseDate": "18 Dec 2023",
+    "warrantyEndDate": "18 Dec 2025",
+    "image": "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=80&h=80&fit=crop"
+  }
+]

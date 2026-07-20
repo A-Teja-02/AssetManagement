@@ -1,0 +1,79 @@
+[
+  {
+    "id": "EMP001",
+    "name": "Rakesh Reddy",
+    "department": "IT",
+    "designation": "System Engineer",
+    "email": "rakesh.reddy@company.com",
+    "phone": "+91 98765 43210",
+    "status": "Active",
+    "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces",
+    "joiningDate": "01 Jan 2024"
+  },
+  {
+    "id": "EMP002",
+    "name": "Rahul Sharma",
+    "department": "IT",
+    "designation": "Network Engineer",
+    "email": "rahul.sharma@company.com",
+    "phone": "+91 91234 56789",
+    "status": "Active",
+    "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=faces",
+    "joiningDate": "15 Feb 2024"
+  },
+  {
+    "id": "EMP003",
+    "name": "Priya Singh",
+    "department": "Finance",
+    "designation": "Accounts Executive",
+    "email": "priya.singh@company.com",
+    "phone": "+91 99887 66554",
+    "status": "Active",
+    "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=faces",
+    "joiningDate": "10 Mar 2024"
+  },
+  {
+    "id": "EMP004",
+    "name": "Amit Verma",
+    "department": "HR",
+    "designation": "HR Executive",
+    "email": "amit.verma@company.com",
+    "phone": "+91 90000 11122",
+    "status": "Active",
+    "avatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=100&h=100&fit=crop&crop=faces",
+    "joiningDate": "01 Apr 2024"
+  },
+  {
+    "id": "EMP005",
+    "name": "Neha Patel",
+    "department": "Marketing",
+    "designation": "Marketing Manager",
+    "email": "neha.patel@company.com",
+    "phone": "+91 97777 88990",
+    "status": "Active",
+    "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=faces",
+    "joiningDate": "20 May 2024"
+  },
+  {
+    "id": "EMP006",
+    "name": "Vikram Reddy",
+    "department": "IT",
+    "designation": "Technical Support",
+    "email": "vikram.reddy@company.com",
+    "phone": "+91 98888 77665",
+    "status": "Inactive",
+    "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=faces",
+    "joiningDate": "12 Jun 2024"
+  },
+  {
+    "id": "EMP007",
+    "name": "Sneha Iyer",
+    "department": "Operations",
+    "designation": "Operations Executive",
+    "email": "sneha.iyer@company.com",
+    "phone": "+91 93333 44556",
+    "status": "Inactive",
+    "avatar": "https://images.unsplash.com/photo-1554151228-14d9def656e4?w=100&h=100&fit=crop&crop=faces",
+    "joiningDate": "01 Jul 2024"
+  }
+]

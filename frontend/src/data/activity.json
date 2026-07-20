@@ -1,0 +1,58 @@
+[
+  {
+    "id": "ACT001",
+    "user": "Rakesh Reddy",
+    "activity": "Login",
+    "details": "User logged in successfully",
+    "ipAddress": "192.168.1.10",
+    "dateTime": "10 Jul 2026, 10:30 AM"
+  },
+  {
+    "id": "ACT002",
+    "user": "Rakesh Reddy",
+    "activity": "Update Profile",
+    "details": "Profile information updated",
+    "ipAddress": "192.168.1.10",
+    "dateTime": "10 Jul 2026, 10:25 AM"
+  },
+  {
+    "id": "ACT003",
+    "user": "Rakesh Reddy",
+    "activity": "Change Password",
+    "details": "Password changed successfully",
+    "ipAddress": "192.168.1.10",
+    "dateTime": "10 Jul 2026, 10:20 AM"
+  },
+  {
+    "id": "ACT004",
+    "user": "Rakesh Reddy",
+    "activity": "Assign Asset",
+    "details": "Assigned Dell Laptop (LT0001) to Rakesh Reddy",
+    "ipAddress": "192.168.1.10",
+    "dateTime": "10 Jul 2026, 09:15 AM"
+  },
+  {
+    "id": "ACT005",
+    "user": "Rakesh Reddy",
+    "activity": "Create Repair",
+    "details": "Created repair request REP00028 for Dell Latitude 5440 (LT0001)",
+    "ipAddress": "192.168.1.10",
+    "dateTime": "10 Jul 2026, 08:30 AM"
+  },
+  {
+    "id": "ACT006",
+    "user": "Rakesh Reddy",
+    "activity": "Return Asset",
+    "details": "Returned Logitech Mouse (MS0001) from Rahul Sharma",
+    "ipAddress": "192.168.1.10",
+    "dateTime": "09 Jul 2026, 04:00 PM"
+  },
+  {
+    "id": "ACT007",
+    "user": "Rakesh Reddy",
+    "activity": "Add Employee",
+    "details": "Added new employee Sneha Iyer (EMP007)",
+    "ipAddress": "192.168.1.10",
+    "dateTime": "01 Jul 2026, 11:45 AM"
+  }
+]
