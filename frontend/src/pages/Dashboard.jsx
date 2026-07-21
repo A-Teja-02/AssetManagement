@@ -1,38 +1,45 @@
 import React, { useState } from 'react';
-import { 
-  Laptop, 
-  CheckCircle, 
-  AlertTriangle, 
-  Wrench, 
-  Trash2, 
-  Plus, 
-  Search, 
-  Eye, 
-  Pencil, 
-  Trash, 
-  ChevronLeft, 
+import { useNavigate } from 'react-router-dom';
+import {
+  Laptop,
+  CheckCircle,
+  AlertTriangle,
+  Wrench,
+  Trash2,
+  Plus,
+  Search,
+  Eye,
+  Pencil,
+  Trash,
+  ChevronLeft,
   ChevronRight,
   TrendingUp,
   X
 } from 'lucide-react';
-import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  ResponsiveContainer, 
-  Tooltip 
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip
 } from 'recharts';
 import { useAssetManager } from '../hooks/useAssetManager';
 import MetricCard from '../components/MetricCard';
 import Avatar from '../components/Avatar';
+import AssetIconBadge from '../components/AssetIcon';
 
 const Dashboard = () => {
-  const { 
-    assets, 
-    employees, 
-    repairs, 
-    addAsset, 
-    updateAsset, 
+  const navigate = useNavigate();
+  const {
+    assets,
+    employees,
+    repairs,
+    categories,
+    announcements,
+    addAnnouncement,
+    deleteAnnouncement,
+    addAsset,
+    updateAsset,
     deleteAsset,
     showToast
   } = useAssetManager();
@@ -42,6 +49,52 @@ const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const itemsPerPage = 5;
+
+  // Announcement Modal states
+  const [isAnnModalOpen, setIsAnnModalOpen] = useState(false);
+  const [annTitle, setAnnTitle] = useState('');
+  const [annMessage, setAnnMessage] = useState('');
+  const [annType, setAnnType] = useState('General');
+  const [annPriority, setAnnPriority] = useState('Medium');
+
+  const handlePostAnnouncement = (e) => {
+    e.preventDefault();
+    if (!annTitle.trim()) {
+      showToast('Announcement title is required.', 'error');
+      return;
+    }
+    if (!annMessage.trim()) {
+      showToast('Announcement message is required.', 'error');
+      return;
+    }
+    addAnnouncement({
+      title: annTitle.trim(),
+      message: annMessage.trim(),
+      type: annType,
+      priority: annPriority
+    });
+    setAnnTitle('');
+    setAnnMessage('');
+    setIsAnnModalOpen(false);
+    showToast(`Successfully broadcasted announcement "${annTitle.trim()}" to all employee dashboards!`);
+  };
+  const categoryTypes = categories && categories.length > 0
+    ? categories
+    : [
+      { name: 'Laptop', group: 'IT' },
+      { name: 'Monitor', group: 'IT' },
+      { name: 'Mouse', group: 'IT' },
+      { name: 'Keyboard', group: 'IT' },
+      { name: 'Headphones', group: 'IT' },
+      { name: 'Printer', group: 'IT' },
+      { name: 'Chairs', group: 'Non-IT' },
+      { name: 'Tables', group: 'Non-IT' },
+      { name: 'Whiteboards', group: 'Non-IT' },
+      { name: 'Storage Cabinets', group: 'Non-IT' }
+    ];
+
+  const itCategoryList = categoryTypes.filter(c => (c.group || 'IT') === 'IT');
+  const nonItCategoryList = categoryTypes.filter(c => c.group === 'Non-IT');
 
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -144,7 +197,7 @@ const Dashboard = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* 5 KPI Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 justify-between">
         <MetricCard icon={Laptop} title="Total Assets" value={totalCount} color="blue" linkTo="/assets" />
         <MetricCard icon={CheckCircle} title="Assigned Assets" value={assignedCount} color="green" linkTo="/assets" />
         <MetricCard icon={TrendingUp} title="Available Assets" value={availableCount} color="orange" linkTo="/assets" />
@@ -152,23 +205,30 @@ const Dashboard = () => {
         <MetricCard icon={Trash2} title="Disposed Assets" value={disposedCount} color="purple" linkTo="/assets" />
       </div>
 
-      {/* Charts & Status Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left: Recharts Donut Chart */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-          <h3 className="text-base font-bold text-slate-800">Assets Overview</h3>
-          <div className="relative h-64 flex items-center justify-center">
+      {/* Charts & Status Section: Only 2 Cards (Assets Overview & Announcements) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Card 1: Assets Overview (Recharts Donut Chart) */}
+        <div
+          onClick={() => navigate('/categories')}
+          className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between cursor-pointer hover:shadow-md hover:border-blue-300 transition-all group min-h-[340px]"
+          title="Click to view Categories & Quantities"
+        >
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 className="text-base font-bold text-slate-800 group-hover:text-blue-600 transition-colors">Assets Overview</h3>
+            <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100/60 group-hover:bg-blue-600 group-hover:text-white transition-all">View Categories &rarr;</span>
+          </div>
+          <div className="relative h-56 flex items-center justify-center my-2">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px' }}
                 />
                 <Pie
                   data={chartData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={70}
-                  outerRadius={90}
+                  innerRadius={65}
+                  outerRadius={85}
                   paddingAngle={5}
                   dataKey="value"
                 >
@@ -180,16 +240,16 @@ const Dashboard = () => {
             </ResponsiveContainer>
             {/* Center Text */}
             <div className="absolute text-center">
-              <span className="text-3xl font-extrabold text-slate-800">{totalCount}</span>
+              <span className="text-2xl font-extrabold text-slate-800">{totalCount}</span>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-100">
             {chartData.map((item, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                <span className="text-xs font-semibold text-slate-500">{item.name}</span>
-                <span className="text-xs font-bold text-slate-800 ml-auto">
+              <div key={idx} className="flex items-center gap-1.5 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                <span className="text-[11px] font-semibold text-slate-600 truncate">{item.name}</span>
+                <span className="text-[11px] font-bold text-slate-800 ml-auto">
                   {Math.round((item.value / (totalCount || 1)) * 100)}%
                 </span>
               </div>
@@ -197,56 +257,54 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Center: Recent Assignments List */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <h3 className="text-base font-bold text-slate-800">Recent Assignments</h3>
-            <button className="text-xs font-bold text-blue-600 hover:text-blue-800">View all</button>
+        {/* Card 2: Announcements List */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-4 min-h-[340px]">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-bold text-slate-800">Announcements</h3>
+              <span className="px-2 py-0.5 text-[9px] font-extrabold text-blue-700 bg-blue-50 rounded-full border border-blue-100">
+                {announcements?.length || 0}
+              </span>
+            </div>
+            <button
+              onClick={() => setIsAnnModalOpen(true)}
+              className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Post New</span>
+            </button>
           </div>
-          <div className="divide-y divide-slate-100 flex-1 flex flex-col justify-center">
-            {employees.slice(0, 4).map((emp, i) => {
-              const assigned = assets.filter(a => a.assignedTo === emp.id);
-              const deviceName = assigned.length > 0 ? `${assigned[0].brand} ${assigned[0].model}` : 'Generic Item';
-              return (
-                <div key={emp.id} className="py-3.5 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Avatar name={emp.name} className="h-10 w-10 rounded-xl" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-800 truncate">{emp.name}</p>
-                      <p className="text-[10px] text-slate-400 truncate mt-0.5">{deviceName}</p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-400 shrink-0">10 Jul 2026</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* Right: Asset Status summary list */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <h3 className="text-base font-bold text-slate-800">Asset Status</h3>
-            <button className="text-xs font-bold text-blue-600 hover:text-blue-800">View all</button>
-          </div>
-          <div className="space-y-4 flex-1 flex flex-col justify-center mt-4">
-            {[
-              { label: 'All Assets', value: totalCount, icon: Laptop, color: 'text-blue-500 bg-blue-50' },
-              { label: 'Assigned', value: assignedCount, icon: CheckCircle, color: 'text-emerald-500 bg-emerald-50' },
-              { label: 'Available', value: availableCount, icon: TrendingUp, color: 'text-amber-500 bg-amber-50' },
-              { label: 'Under Repair', value: repairCount, icon: Wrench, color: 'text-rose-500 bg-rose-50' },
-              { label: 'Disposed', value: disposedCount, icon: Trash2, color: 'text-purple-500 bg-purple-50' }
-            ].map((stat, idx) => (
-              <div key={idx} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl ${stat.color}`}>
-                    <stat.icon className="h-4 w-4" />
+          <div className="space-y-3 flex-1 overflow-y-auto max-h-[260px] pr-1">
+            {(!announcements || announcements.length === 0) ? (
+              <p className="text-xs text-slate-400 font-semibold py-8 text-center">No announcements posted yet.</p>
+            ) : (
+              announcements.map((ann) => (
+                <div key={ann.id} className="p-3 bg-slate-50 border border-slate-200/70 rounded-2xl space-y-1 relative group hover:bg-slate-100/60 transition-all">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-xs font-extrabold text-slate-800 truncate pr-2">{ann.title}</h4>
+                    <button
+                      onClick={() => {
+                        deleteAnnouncement(ann.id);
+                        showToast(`Deleted announcement "${ann.title}"`, 'info');
+                      }}
+                      className="text-slate-300 hover:text-red-500 transition-colors p-1 shrink-0 cursor-pointer"
+                      title="Delete Announcement"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  <span className="text-xs font-bold text-slate-700">{stat.label}</span>
+                  <p className="text-[10px] text-slate-500 line-clamp-2 leading-relaxed">{ann.message}</p>
+                  <div className="flex items-center justify-between text-[9px] text-slate-400 font-bold pt-1.5 border-t border-slate-200/40">
+                    <span>{ann.date}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold ${ann.priority === 'High' || ann.priority === 'Urgent' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
+                      }`}>
+                      {ann.type || 'General'}
+                    </span>
+                  </div>
                 </div>
-                <span className="text-sm font-extrabold text-slate-800">{stat.value}</span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -270,7 +328,7 @@ const Dashboard = () => {
               />
             </div>
             {/* Add Asset Trigger */}
-            <button 
+            <button
               onClick={handleOpenAddModal}
               className="flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-all shadow-md shadow-blue-500/10 shrink-0"
             >
@@ -316,12 +374,11 @@ const Dashboard = () => {
                       <td className="py-4 px-4">{asset.model}</td>
                       <td className="py-4 px-4 font-mono">{asset.serialNumber}</td>
                       <td className="py-4 px-4">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap inline-block text-center min-w-[90px] ${
-                          asset.status === 'Assigned' ? 'bg-emerald-50 text-emerald-600' :
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap inline-block text-center min-w-[90px] ${asset.status === 'Assigned' ? 'bg-emerald-50 text-emerald-600' :
                           asset.status === 'Available' ? 'bg-blue-50 text-blue-600' :
-                          asset.status === 'Under Repair' ? 'bg-amber-50 text-amber-600' :
-                          'bg-slate-100 text-slate-600'
-                        }`}>
+                            asset.status === 'Under Repair' ? 'bg-amber-50 text-amber-600' :
+                              'bg-slate-100 text-slate-600'
+                          }`}>
                           {asset.status}
                         </span>
                       </td>
@@ -338,21 +395,21 @@ const Dashboard = () => {
                       <td className="py-4 px-4 text-slate-500">{asset.purchaseDate}</td>
                       <td className="py-4 pl-4 text-right">
                         <div className="flex items-center justify-end gap-2.5">
-                          <button 
+                          <button
                             onClick={() => handleOpenViewModal(asset)}
                             className="p-1.5 hover:bg-slate-100 rounded-lg text-blue-600 transition-all"
                             title="View"
                           >
                             <Eye className="h-4 w-4" />
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleOpenEditModal(asset)}
                             className="p-1.5 hover:bg-slate-100 rounded-lg text-blue-600 transition-all"
                             title="Edit"
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
-                          <button 
+                          <button
                             onClick={() => setDeleteConfirmId(asset.id)}
                             className="p-1.5 hover:bg-red-50 rounded-lg text-red-500 transition-all"
                             title="Delete"
@@ -376,7 +433,7 @@ const Dashboard = () => {
               Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredAssets.length)} of {filteredAssets.length} entries
             </span>
             <div className="flex items-center gap-1">
-              <button 
+              <button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
                 className="p-2 border border-slate-200 hover:bg-slate-50 rounded-xl disabled:opacity-40 transition-all"
@@ -409,18 +466,17 @@ const Dashboard = () => {
                     <button
                       key={p}
                       onClick={() => setCurrentPage(p)}
-                      className={`h-8 w-8 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                        currentPage === p 
-                          ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20' 
-                          : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                      }`}
+                      className={`h-8 w-8 rounded-xl border text-xs font-bold transition-all cursor-pointer ${currentPage === p
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                        }`}
                     >
                       {p}
                     </button>
                   )
                 ));
               })()}
-              <button 
+              <button
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
                 className="p-2 border border-slate-200 hover:bg-slate-50 rounded-xl disabled:opacity-40 transition-all"
@@ -447,24 +503,33 @@ const Dashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Asset Type *</label>
-                  <select 
-                    value={formType} 
+                  <select
+                    value={formType}
                     onChange={e => setFormType(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   >
-                    {["Laptop", "Monitor", "Mouse", "Keyboard", "Headset", "Printer", "Desktop", "Docking Station"].map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
+                    <optgroup label="IT Assets">
+                      {itCategoryList.map(cat => (
+                        <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
+                      ))}
+                    </optgroup>
+                    {nonItCategoryList.length > 0 && (
+                      <optgroup label="Non-IT Assets">
+                        {nonItCategoryList.map(cat => (
+                          <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Brand *</label>
-                  <select 
-                    value={formBrand} 
+                  <select
+                    value={formBrand}
                     onChange={e => setFormBrand(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   >
-                    {["Dell", "Logitech", "HP", "Apple", "Samsung", "Lenovo", "Sony", "Epson"].map(b => (
+                    {["Dell", "Logitech", "HP", "Apple", "Samsung", "Lenovo", "Sony", "Epson", "Herman Miller", "Steelcase", "Ikea", "Godrej", "Featherlite", "Generic"].map(b => (
                       <option key={b} value={b}>{b}</option>
                     ))}
                   </select>
@@ -473,22 +538,22 @@ const Dashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Model Name *</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={formModel} 
-                    onChange={e => setFormModel(e.target.value)} 
+                  <input
+                    type="text"
+                    required
+                    value={formModel}
+                    onChange={e => setFormModel(e.target.value)}
                     placeholder="e.g. Latitude 5440"
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Serial Number / Barcode *</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={formSerial} 
-                    onChange={e => setFormSerial(e.target.value)} 
+                  <input
+                    type="text"
+                    required
+                    value={formSerial}
+                    onChange={e => setFormSerial(e.target.value)}
                     placeholder="e.g. ABC12345"
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   />
@@ -497,8 +562,8 @@ const Dashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Initial Status</label>
-                  <select 
-                    value={formStatus} 
+                  <select
+                    value={formStatus}
                     onChange={e => setFormStatus(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   >
@@ -511,9 +576,9 @@ const Dashboard = () => {
                 {formStatus === 'Assigned' && (
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Assign To Employee *</label>
-                    <select 
-                      required 
-                      value={formAssigned} 
+                    <select
+                      required
+                      value={formAssigned}
                       onChange={e => setFormAssigned(e.target.value)}
                       className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                     >
@@ -553,24 +618,33 @@ const Dashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Asset Type *</label>
-                  <select 
-                    value={formType} 
+                  <select
+                    value={formType}
                     onChange={e => setFormType(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   >
-                    {["Laptop", "Monitor", "Mouse", "Keyboard", "Headset", "Printer", "Desktop", "Docking Station"].map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
+                    <optgroup label="IT Assets">
+                      {itCategoryList.map(cat => (
+                        <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
+                      ))}
+                    </optgroup>
+                    {nonItCategoryList.length > 0 && (
+                      <optgroup label="Non-IT Assets">
+                        {nonItCategoryList.map(cat => (
+                          <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Brand *</label>
-                  <select 
-                    value={formBrand} 
+                  <select
+                    value={formBrand}
                     onChange={e => setFormBrand(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   >
-                    {["Dell", "Logitech", "HP", "Apple", "Samsung", "Lenovo", "Sony", "Epson"].map(b => (
+                    {["Dell", "Logitech", "HP", "Apple", "Samsung", "Lenovo", "Sony", "Epson", "Herman Miller", "Steelcase", "Ikea", "Godrej", "Featherlite", "Generic"].map(b => (
                       <option key={b} value={b}>{b}</option>
                     ))}
                   </select>
@@ -579,20 +653,20 @@ const Dashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Model Name *</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={formModel} 
+                  <input
+                    type="text"
+                    required
+                    value={formModel}
                     onChange={e => setFormModel(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Serial Number / Barcode *</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={formSerial} 
+                  <input
+                    type="text"
+                    required
+                    value={formSerial}
                     onChange={e => setFormSerial(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   />
@@ -601,8 +675,8 @@ const Dashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Status</label>
-                  <select 
-                    value={formStatus} 
+                  <select
+                    value={formStatus}
                     onChange={e => setFormStatus(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   >
@@ -615,9 +689,9 @@ const Dashboard = () => {
                 {formStatus === 'Assigned' && (
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Assign To Employee *</label>
-                    <select 
-                      required 
-                      value={formAssigned} 
+                    <select
+                      required
+                      value={formAssigned}
                       onChange={e => setFormAssigned(e.target.value)}
                       className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                     >
@@ -650,7 +724,7 @@ const Dashboard = () => {
             <button onClick={() => setIsViewModalOpen(false)} className="absolute top-5 right-5 p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700">
               <X className="h-5 w-5" />
             </button>
-            <img src={selectedAsset?.image} alt={selectedAsset?.model} className="h-28 w-28 object-cover rounded-3xl border border-slate-100 shadow-sm mt-4" />
+            <AssetIconBadge type={selectedAsset?.type} className="h-24 w-24 rounded-3xl mt-4" iconSize="h-12 w-12" />
             <h3 className="font-extrabold text-slate-800 text-lg mt-4">{selectedAsset?.brand} {selectedAsset?.model}</h3>
             <span className="text-xs bg-slate-100 text-slate-500 px-3 py-1 rounded-full font-bold mt-1 tracking-wide uppercase">{selectedAsset?.type}</span>
 
@@ -665,17 +739,16 @@ const Dashboard = () => {
               </div>
               <div className="flex justify-between border-b border-slate-50 pb-2">
                 <span className="font-semibold text-slate-400">Status</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                  selectedAsset?.status === 'Assigned' ? 'bg-emerald-50 text-emerald-600' :
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${selectedAsset?.status === 'Assigned' ? 'bg-emerald-50 text-emerald-600' :
                   selectedAsset?.status === 'Available' ? 'bg-blue-50 text-blue-600' :
-                  selectedAsset?.status === 'Under Repair' ? 'bg-amber-50 text-amber-600' :
-                  'bg-slate-100 text-slate-600'
-                }`}>{selectedAsset?.status}</span>
+                    selectedAsset?.status === 'Under Repair' ? 'bg-amber-50 text-amber-600' :
+                      'bg-slate-100 text-slate-600'
+                  }`}>{selectedAsset?.status}</span>
               </div>
               <div className="flex justify-between border-b border-slate-50 pb-2">
                 <span className="font-semibold text-slate-400">Assigned To</span>
                 <span className="font-bold text-slate-800">
-                  {selectedAsset?.assignedTo 
+                  {selectedAsset?.assignedTo
                     ? `${employees.find(e => e.id === selectedAsset.assignedTo)?.name} (${selectedAsset.assignedTo})`
                     : 'None'
                   }
@@ -691,7 +764,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <button 
+            <button
               onClick={() => setIsViewModalOpen(false)}
               className="mt-8 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/10 text-xs transition-all"
             >
@@ -714,14 +787,14 @@ const Dashboard = () => {
               <p className="text-xs text-slate-500 mt-2">Are you sure you want to delete asset {deleteConfirmId}? This action cannot be undone.</p>
             </div>
             <div className="flex items-center gap-3 pt-2 text-xs">
-              <button 
+              <button
                 type="button"
                 onClick={() => setDeleteConfirmId(null)}
                 className="flex-1 py-2 border border-slate-200 rounded-xl hover:bg-slate-50 font-bold text-slate-500 transition-all cursor-pointer"
               >
                 Go Back
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => {
                   deleteAsset(deleteConfirmId);
@@ -733,6 +806,96 @@ const Dashboard = () => {
                 Delete Asset
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Post New Announcement */}
+      {isAnnModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsAnnModalOpen(false)} />
+          <div className="relative bg-white border border-slate-200 w-full max-w-lg rounded-3xl shadow-2xl p-6 z-10 space-y-5 animate-scale-in">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-extrabold text-slate-800 text-base">Post Announcement for Employees</h3>
+              <button
+                onClick={() => setIsAnnModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handlePostAnnouncement} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5">Announcement Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. System Maintenance Schedule / Asset Audit Notice..."
+                  value={annTitle}
+                  onChange={(e) => setAnnTitle(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1.5">Category Type</label>
+                  <select
+                    value={annType}
+                    onChange={(e) => setAnnType(e.target.value)}
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+                  >
+                    <option value="Maintenance">Maintenance</option>
+                    <option value="General">General Notice</option>
+                    <option value="Security">Security Alert</option>
+                    <option value="Policy">Policy Update</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1.5">Priority Level</label>
+                  <select
+                    value={annPriority}
+                    onChange={(e) => setAnnPriority(e.target.value)}
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Urgent">Urgent</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5">Announcement Details *</label>
+                <textarea
+                  rows={4}
+                  required
+                  placeholder="Enter detailed message to broadcast to all employee portals..."
+                  value={annMessage}
+                  onChange={(e) => setAnnMessage(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAnnModalOpen(false)}
+                  className="flex-1 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 font-bold text-slate-600 transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all cursor-pointer"
+                >
+                  Broadcast Announcement
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

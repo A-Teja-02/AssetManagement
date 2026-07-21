@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useAssetManager } from '../hooks/useAssetManager';
 import Avatar from '../components/Avatar';
+import AssetIconBadge from '../components/AssetIcon';
 
 const AssignAsset = () => {
   const { 
@@ -45,7 +46,6 @@ const AssignAsset = () => {
   
   // Form details state
   const [assignDate, setAssignDate] = useState('2026-07-10');
-  const [expectedReturnDate, setExpectedReturnDate] = useState('2028-07-10');
   const [remarks, setRemarks] = useState('');
 
   // 1. Get selected employee details
@@ -84,7 +84,7 @@ const AssignAsset = () => {
       return;
     }
 
-    assignAssets(selectedEmpId, selectedAssetIds, assignDate, expectedReturnDate, remarks);
+    assignAssets(selectedEmpId, selectedAssetIds, assignDate, remarks);
     
     // Success feedback and Reset
     showToast(`Successfully assigned ${selectedAssetIds.length} assets to ${currentEmp.name}!`);
@@ -97,12 +97,23 @@ const AssignAsset = () => {
     setSelectedAssetIds([]);
     setRemarks('');
     setAssignDate('2026-07-10');
-    setExpectedReturnDate('2028-07-10');
     setSelectedCategory(null);
   };
 
   // Filter recent assignments list for the history log table
   const recentAssignmentsLogs = activity.filter(act => act.activity === "Assign Asset");
+
+  const formatDateWithYear = (dateStr) => {
+    if (!dateStr) return '-';
+    const parts = dateStr.split(',').map(s => s.trim());
+    if (/\b\d{4}\b/.test(parts[0])) {
+      return parts[0];
+    }
+    if (parts.length >= 2 && /\b\d{4}\b/.test(parts[1])) {
+      return `${parts[0]}, ${parts[1]}`;
+    }
+    return parts[0];
+  };
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -190,7 +201,6 @@ const AssignAsset = () => {
                     { name: 'Keyboard', icon: Keyboard },
                     { name: 'Headset', icon: Headphones },
                     { name: 'Printer', icon: Printer },
-                    { name: 'Desktop', icon: Cpu },
                     { name: 'Docking Station', icon: Link2 }
                   ].map((cat) => {
                     const availableCount = assets.filter(
@@ -281,7 +291,7 @@ const AssignAsset = () => {
                               checked={false}
                               className="rounded text-blue-600 border-slate-300 focus:ring-blue-500 shrink-0" 
                             />
-                            <img src={asset.image} alt={asset.model} className="h-7 w-7 rounded-lg object-cover border shrink-0" />
+                            <AssetIconBadge type={asset.type} className="h-7 w-7 rounded-lg shrink-0" iconSize="h-3.5 w-3.5" />
                             <div className="min-w-0">
                               <p className="text-xs font-bold text-slate-800">{asset.id} &bull; {asset.brand} {asset.model}</p>
                               <p className="text-[10px] text-slate-400 truncate">{asset.type} &bull; SN: {asset.serialNumber}</p>
@@ -341,7 +351,7 @@ const AssignAsset = () => {
                 basketAssets.map((asset) => (
                   <div key={asset.id} className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50/50">
                     <div className="flex items-center gap-2 min-w-0">
-                      <img src={asset.image} alt={asset.model} className="h-8 w-8 rounded-lg object-cover border shrink-0" />
+                      <AssetIconBadge type={asset.type} className="h-8 w-8 rounded-lg shrink-0" iconSize="h-4 w-4" />
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-slate-800">{asset.id} &bull; {asset.brand} {asset.model}</p>
                         <p className="text-[10px] text-slate-400 truncate">{asset.type} &bull; SN: {asset.serialNumber}</p>
@@ -368,7 +378,7 @@ const AssignAsset = () => {
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assignment Date *</label>
                   <input
@@ -380,18 +390,6 @@ const AssignAsset = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Expected Return Date</label>
-                  <input
-                    type="date"
-                    value={expectedReturnDate}
-                    onChange={e => setExpectedReturnDate(e.target.value)}
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assigned By</label>
                   <input
                     type="text"
@@ -400,16 +398,17 @@ const AssignAsset = () => {
                     className="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 text-slate-500 font-semibold cursor-not-allowed"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Remarks (Optional)</label>
-                  <textarea
-                    rows={1}
-                    value={remarks}
-                    onChange={e => setRemarks(e.target.value)}
-                    placeholder="Enter remarks..."
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none resize-none"
-                  />
-                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Remarks (Optional)</label>
+                <textarea
+                  rows={2}
+                  value={remarks}
+                  onChange={e => setRemarks(e.target.value)}
+                  placeholder="Enter remarks..."
+                  className="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none resize-none"
+                />
               </div>
 
               <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
@@ -445,7 +444,6 @@ const AssignAsset = () => {
                 <th className="pb-3 px-4">Asset(s)</th>
                 <th className="pb-3 px-4">Assigned By</th>
                 <th className="pb-3 px-4">Assignment Date</th>
-                <th className="pb-3 px-4">Expected Return Date</th>
                 <th className="pb-3 pl-4 text-right">Action</th>
               </tr>
             </thead>
@@ -472,8 +470,7 @@ const AssignAsset = () => {
                       1 Asset
                     </td>
                     <td className="py-4 px-4 font-semibold text-slate-600">{log.user} (Admin)</td>
-                    <td className="py-4 px-4 text-slate-500">{log.dateTime.split(',')[0]}</td>
-                    <td className="py-4 px-4 text-slate-500">09 Jul 2028</td>
+                    <td className="py-4 px-4 text-slate-500">{formatDateWithYear(log.dateTime)}</td>
                     <td className="py-4 pl-4 text-right">
                       <button 
                         onClick={() => showToast(`Details: ${log.details}`, "info")}

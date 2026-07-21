@@ -72,8 +72,19 @@ const ReturnAsset = () => {
     setRemarks('');
   };
 
-  // Filter recent return log activities
   const returnLogs = activity.filter(act => act.activity === "Return Asset");
+
+  const formatDateWithYear = (dateStr) => {
+    if (!dateStr) return '-';
+    const parts = dateStr.split(',').map(s => s.trim());
+    if (/\b\d{4}\b/.test(parts[0])) {
+      return parts[0];
+    }
+    if (parts.length >= 2 && /\b\d{4}\b/.test(parts[1])) {
+      return `${parts[0]}, ${parts[1]}`;
+    }
+    return parts[0];
+  };
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -371,7 +382,7 @@ const ReturnAsset = () => {
                       )}
                     </td>
                     <td className="py-4 px-4 font-bold text-blue-600">1 Asset</td>
-                    <td className="py-4 px-4 text-slate-500">{log.dateTime.split(',')[0]}</td>
+                    <td className="py-4 px-4 text-slate-500">{formatDateWithYear(log.dateTime)}</td>
                     <td className="py-4 px-4 text-slate-600">{log.user} (Admin)</td>
                     <td className="py-4 px-4 text-slate-500">Employee Resignation</td>
                     <td className="py-4 px-4">

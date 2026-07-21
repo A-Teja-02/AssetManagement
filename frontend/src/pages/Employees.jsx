@@ -12,6 +12,7 @@ import {
   Trash, 
   ChevronLeft, 
   ChevronRight,
+  FileSpreadsheet,
   X,
   PlusCircle,
   Briefcase,
@@ -20,6 +21,8 @@ import {
 import { useAssetManager } from '../hooks/useAssetManager';
 import MetricCard from '../components/MetricCard';
 import Avatar from '../components/Avatar';
+import ExcelImportModal from '../components/ExcelImportModal';
+import AssetIconBadge from '../components/AssetIcon';
 
 const Employees = () => {
   const { 
@@ -36,7 +39,8 @@ const Employees = () => {
   const [deleteConfirmEmp, setDeleteConfirmEmp] = useState(null);
   const [deptFilter, setDeptFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const itemsPerPage = 10;
 
   // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -47,10 +51,13 @@ const Employees = () => {
   // Form states
   const [formName, setFormName] = useState('');
   const [formDept, setFormDept] = useState('IT');
+  const [customDept, setCustomDept] = useState('');
   const [formDesig, setFormDesig] = useState('');
   const [formEmail, setFormEmail] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formStatus, setFormStatus] = useState('Active');
+
+  const standardDepartments = ["IT", "Finance", "HR", "Marketing", "Operations", "Sales", "Legal", "Executive"];
 
   // Statistics calculation
   const totalEmployeesCount = employees.length;
@@ -80,6 +87,7 @@ const Employees = () => {
   const handleOpenAddModal = () => {
     setFormName('');
     setFormDept('IT');
+    setCustomDept('');
     setFormDesig('');
     setFormEmail('');
     setFormPhone('');
@@ -89,9 +97,10 @@ const Employees = () => {
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
+    const finalDept = formDept === 'Other' ? (customDept.trim() || 'Other') : formDept;
     addEmployee({
       name: formName,
-      department: formDept,
+      department: finalDept,
       designation: formDesig,
       email: formEmail,
       phone: formPhone,
@@ -103,7 +112,9 @@ const Employees = () => {
   const handleOpenEditModal = (emp) => {
     setSelectedEmployee(emp);
     setFormName(emp.name);
-    setFormDept(emp.department);
+    const isStandard = standardDepartments.includes(emp.department);
+    setFormDept(isStandard ? emp.department : 'Other');
+    setCustomDept(isStandard ? '' : emp.department);
     setFormDesig(emp.designation);
     setFormEmail(emp.email);
     setFormPhone(emp.phone);
@@ -113,10 +124,11 @@ const Employees = () => {
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
+    const finalDept = formDept === 'Other' ? (customDept.trim() || 'Other') : formDept;
     updateEmployee({
       ...selectedEmployee,
       name: formName,
-      department: formDept,
+      department: finalDept,
       designation: formDesig,
       email: formEmail,
       phone: formPhone,
@@ -134,6 +146,52 @@ const Employees = () => {
     deleteEmployee(deleteConfirmEmp.id);
     showToast('Employee deleted successfully', 'success');
     setDeleteConfirmEmp(null);
+  };
+
+  // Excel Bulk Import Handler for Employees
+  const handleImportEmployees = (rawRows) => {
+    let successCount = 0;
+    const failedRows = [];
+
+    rawRows.forEach((row, idx) => {
+      const name = row.Name || row.name || row['Employee Name'] || '';
+      const email = row.Email || row.email || '';
+      const department = row.Department || row.department || 'General';
+      const designation = row.Designation || row.designation || 'Specialist';
+      const phone = row.Phone || row.phone || '+91 98765 43210';
+
+      if (!name) {
+        failedRows.push({ row: idx + 2, reason: 'Missing Employee Name' });
+        return;
+      }
+
+      // Check duplicate
+      const exists = employees.some(e => e.name.toLowerCase() === String(name).toLowerCase() || (email && e.email.toLowerCase() === String(email).toLowerCase()));
+      if (exists) {
+        failedRows.push({ row: idx + 2, reason: `Employee "${name}" already exists.` });
+        return;
+      }
+
+      addEmployee({
+        name: String(name),
+        email: email ? String(email) : `${String(name).toLowerCase().replace(/[^a-z]/g, '')}@company.com`,
+        department: String(department),
+        designation: String(designation),
+        phone: String(phone),
+        status: 'Active'
+      });
+      successCount++;
+    });
+
+    if (successCount > 0) {
+      showToast(`Successfully imported ${successCount} employees from Excel!`);
+    }
+
+    return {
+      totalRows: rawRows.length,
+      successCount,
+      failedRows
+    };
   };
 
   return (
@@ -158,7 +216,12 @@ const Employees = () => {
       {/* Employees Main Panel */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h3 className="text-base font-bold text-slate-800">Employee List</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-base font-bold text-slate-800">Employee List</h3>
+            <span className="text-[10px] font-extrabold bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full border border-blue-100 whitespace-nowrap shrink-0 inline-flex items-center">
+              {filteredEmployees.length} Total
+            </span>
+          </div>
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             {/* Search */}
             <div className="relative flex-1 sm:w-64 min-w-[200px]">
@@ -178,17 +241,28 @@ const Employees = () => {
             <select
               value={deptFilter}
               onChange={e => { setDeptFilter(e.target.value); setCurrentPage(1); }}
-              className="px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold"
+              className="px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold cursor-pointer"
             >
               {departmentsList.map(dept => (
                 <option key={dept} value={dept}>{dept === 'All' ? 'All Departments' : dept}</option>
               ))}
             </select>
 
+            {/* Excel Import Trigger */}
+            <button 
+              type="button"
+              onClick={() => setIsImportModalOpen(true)}
+              className="flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl border border-emerald-200 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-700 font-bold text-xs transition-all cursor-pointer shadow-xs shrink-0"
+            >
+              <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+              <span>Import</span>
+            </button>
+
             {/* Add Employee Trigger */}
             <button 
+              type="button"
               onClick={handleOpenAddModal}
-              className="flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-all shadow-md shadow-blue-500/10 shrink-0"
+              className="flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-all shadow-md shadow-blue-500/10 cursor-pointer shrink-0"
             >
               <Plus className="h-4 w-4" />
               <span>Add Employee</span>
@@ -386,10 +460,20 @@ const Employees = () => {
                     onChange={e => setFormDept(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   >
-                    {["IT", "Finance", "HR", "Marketing", "Operations", "Sales", "Legal", "Executive"].map(d => (
+                    {[...standardDepartments, "Other"].map(d => (
                       <option key={d} value={d}>{d}</option>
                     ))}
                   </select>
+                  {formDept === 'Other' && (
+                    <input 
+                      type="text" 
+                      required 
+                      value={customDept} 
+                      onChange={e => setCustomDept(e.target.value)} 
+                      placeholder="Enter custom department name..."
+                      className="w-full mt-2 p-2 border border-blue-200 bg-blue-50/30 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none font-semibold text-blue-900 animate-fade-in"
+                    />
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -483,10 +567,20 @@ const Employees = () => {
                     onChange={e => setFormDept(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   >
-                    {["IT", "Finance", "HR", "Marketing", "Operations", "Sales", "Legal", "Executive"].map(d => (
+                    {[...standardDepartments, "Other"].map(d => (
                       <option key={d} value={d}>{d}</option>
                     ))}
                   </select>
+                  {formDept === 'Other' && (
+                    <input 
+                      type="text" 
+                      required 
+                      value={customDept} 
+                      onChange={e => setCustomDept(e.target.value)} 
+                      placeholder="Enter custom department name..."
+                      className="w-full mt-2 p-2 border border-blue-200 bg-blue-50/30 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none font-semibold text-blue-900 animate-fade-in"
+                    />
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -577,7 +671,7 @@ const Employees = () => {
                   assets.filter(a => a.assignedTo === selectedEmployee?.id).map(asset => (
                     <div key={asset.id} className="p-3 border border-slate-100 rounded-2xl flex items-center justify-between hover:bg-slate-50/50 transition-all">
                       <div className="flex items-center gap-3">
-                        <img src={asset.image} alt={asset.model} className="h-8 w-8 rounded-lg object-cover shrink-0 border" />
+                        <AssetIconBadge type={asset.type} className="h-8 w-8 rounded-lg shrink-0" iconSize="h-4 w-4" />
                         <div>
                           <p className="text-xs font-bold text-slate-800">{asset.brand} {asset.model}</p>
                           <p className="text-[10px] text-slate-400 font-mono mt-0.5">{asset.id} &bull; {asset.serialNumber}</p>
@@ -656,6 +750,20 @@ const Employees = () => {
           </div>
         </div>
       )}
+
+      {/* Excel Import Modal for Employees */}
+      <ExcelImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Import Employees from Excel"
+        onImportData={handleImportEmployees}
+        sampleColumns={["Name", "Department", "Designation", "Email", "Phone"]}
+        sampleData={[
+          { Name: "Sanjay Singhania", Department: "IT Operations", Designation: "Senior Systems Engineer", Email: "sanjay.s@company.com", Phone: "+91 98765 11223" },
+          { Name: "Priyanka Chopra", Department: "Human Resources", Designation: "HR Lead", Email: "priyanka.c@company.com", Phone: "+91 98765 44556" }
+        ]}
+        templateFileName="Employees_Import_Template.xlsx"
+      />
     </div>
   );
 };

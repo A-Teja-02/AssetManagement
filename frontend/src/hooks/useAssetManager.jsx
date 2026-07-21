@@ -25,6 +25,49 @@ export const AssetProvider = ({ children }) => {
   const [repairs, setRepairs] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [activity, setActivity] = useState([]);
+  const [categories, setCategories] = useState([]);
+
+  const defaultGuidelines = {
+    title: "Quadrant IT Services - Asset Policy & Usage Guidelines 2026",
+    version: "v2.4",
+    uploadedDate: "20 Jul 2026",
+    size: "2.4 MB",
+    fileName: "Quadrant_IT_Asset_Policy_2026.pdf",
+    summary: "Official company policy guidelines governing hardware usage, security protocols, return policies, and maintenance procedures.",
+    content: "1. All assigned hardware assets remain the property of Quadrant IT Services.\n2. Employees are responsible for physical care and security of assigned laptops, monitors, and peripherals.\n3. Any hardware fault or damage must be reported immediately via the Raise Ticket portal.\n4. Assets must be returned intact upon offboarding or department transfer.",
+    downloadUrl: "#"
+  };
+
+  const [guidelines, setGuidelines] = useState(() => {
+    const saved = localStorage.getItem('it_asset_guidelines');
+    return saved ? JSON.parse(saved) : defaultGuidelines;
+  });
+
+  const defaultAnnouncements = [
+    {
+      id: "ANN001",
+      title: "System Maintenance Schedule",
+      message: "Central IT servers will be under scheduled maintenance this Sunday from 2:00 AM to 4:00 AM. Access to internal software repositories may be briefly interrupted.",
+      date: "20 Jul 2026",
+      author: "IT Admin Desk",
+      type: "Maintenance",
+      priority: "Medium"
+    },
+    {
+      id: "ANN002",
+      title: "Quarterly Asset Verification Audit",
+      message: "All department employees must verify their assigned hardware items (serial number and condition) before the end-of-quarter audit.",
+      date: "18 Jul 2026",
+      author: "IT Operations",
+      type: "General",
+      priority: "High"
+    }
+  ];
+
+  const [announcements, setAnnouncements] = useState(() => {
+    const saved = localStorage.getItem('it_announcements');
+    return saved ? JSON.parse(saved) : defaultAnnouncements;
+  });
 
   useEffect(() => {
     // 1. Initialize Employees (Target: 125 total; 110 Active, 15 Inactive)
@@ -131,7 +174,7 @@ export const AssetProvider = ({ children }) => {
     let storedAssets = localStorage.getItem('it_assets');
     if (!storedAssets) {
       const generatedAssets = [...initialAssets];
-      const types = ["Laptop", "Monitor", "Mouse", "Keyboard", "Headset", "Printer", "Desktop", "Docking Station"];
+      const types = ["Laptop", "Monitor", "Mouse", "Keyboard", "Headset", "Printer", "Docking Station"];
       const brands = {
         "Laptop": ["Dell", "HP", "Apple", "Lenovo"],
         "Monitor": ["Dell", "HP", "Samsung", "LG"],
@@ -139,7 +182,6 @@ export const AssetProvider = ({ children }) => {
         "Keyboard": ["Dell", "Logitech", "HP", "Lenovo"],
         "Headset": ["HP", "JBL", "Logitech", "Sony"],
         "Printer": ["HP", "Canon", "Epson"],
-        "Desktop": ["Dell", "HP", "Lenovo"],
         "Docking Station": ["Dell", "Lenovo", "HP"]
       };
       const models = {
@@ -149,7 +191,6 @@ export const AssetProvider = ({ children }) => {
         "Keyboard": ["KB216", "K120", "Classic Keyboard", "Preferred Pro"],
         "Headset": ["H200", "Quantum 100", "H111", "MDR-ZX110"],
         "Printer": ["LaserJet 1020", "LBP6030w", "L3210"],
-        "Desktop": ["OptiPlex 7010", "ProDesk 400", "ThinkCentre M70q"],
         "Docking Station": ["WD19S", "ThinkPad Dock", "USB-C G5 Dock"]
       };
       const images = {
@@ -159,7 +200,6 @@ export const AssetProvider = ({ children }) => {
         "Keyboard": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=80&h=80&fit=crop",
         "Headset": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=80&h=80&fit=crop",
         "Printer": "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=80&h=80&fit=crop",
-        "Desktop": "https://images.unsplash.com/photo-1547082299-de196ea013d6?w=80&h=80&fit=crop",
         "Docking Station": "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=80&h=80&fit=crop"
       };
 
@@ -229,7 +269,7 @@ export const AssetProvider = ({ children }) => {
         }
 
         generatedAssets.push({
-          id: `${type === "Laptop" ? "LT" : type === "Monitor" ? "MN" : type === "Mouse" ? "MS" : type === "Keyboard" ? "KB" : type === "Headset" ? "HD" : type === "Printer" ? "PR" : type === "Desktop" ? "DT" : "DS"}${String(i).padStart(4, '0')}`,
+          id: `QITS${String(i).padStart(4, '0')}`,
           type: type,
           brand: brand,
           model: model,
@@ -419,9 +459,16 @@ export const AssetProvider = ({ children }) => {
         ]
       }
     ];
+    parsedRepairs = parsedRepairs.map((r, idx) => ({
+      ...r,
+      acceptedBy: r.acceptedBy || (idx % 2 === 0 ? 'Rakesh Reddy (Admin)' : null)
+    }));
     mockRepairs.forEach(mockRep => {
       if (!parsedRepairs.some(r => r.id === mockRep.id)) {
-        parsedRepairs.push(mockRep);
+        parsedRepairs.push({
+          ...mockRep,
+          acceptedBy: 'Rakesh Reddy (Admin)'
+        });
       }
     });
     localStorage.setItem('it_repairs', JSON.stringify(parsedRepairs));
@@ -484,6 +531,51 @@ export const AssetProvider = ({ children }) => {
     });
     localStorage.setItem('it_activity', JSON.stringify(parsedActivity));
     setActivity(parsedActivity);
+
+    // 6. Initialize Categories
+    let storedCategories = localStorage.getItem('it_categories');
+    const initialCategories = [
+      { id: 'CAT001', name: 'Laptop', description: 'Portable computer devices assigned to individual employees for daily work', iconName: 'Laptop', group: 'IT', scope: 'Employee' },
+      { id: 'CAT002', name: 'Monitor', description: 'External high-res display screens for desktop setups and workstations', iconName: 'Monitor', group: 'IT', scope: 'Organization' },
+      { id: 'CAT003', name: 'Mouse', description: 'Wireless and optical ergonomic pointing devices for workers', iconName: 'Mouse', group: 'IT', scope: 'Employee' },
+      { id: 'CAT004', name: 'Keyboard', description: 'Mechanical and membrane keyboards assigned to employees', iconName: 'Keyboard', group: 'IT', scope: 'Employee' },
+      { id: 'CAT005', name: 'Headphones', description: 'Audio headsets and noise-cancelling headphones for workers', iconName: 'Headphones', group: 'IT', scope: 'Employee' },
+      { id: 'CAT006', name: 'Printer', description: 'Shared department laser printers and corporate office hardware', iconName: 'Printer', group: 'IT', scope: 'Organization' },
+      { id: 'CAT007', name: 'Cpu', description: 'Central processing units, servers, and corporate IT workstations', iconName: 'Cpu', group: 'IT', scope: 'Organization' },
+      { id: 'CAT008', name: 'Chairs', description: 'Ergonomic mesh office chairs and executive seating', iconName: 'Briefcase', group: 'Non-IT', scope: 'Organization' },
+      { id: 'CAT009', name: 'Tables', description: 'Modular office desks, conference and standing tables', iconName: 'Grid', group: 'Non-IT', scope: 'Organization' },
+      { id: 'CAT010', name: 'Whiteboards', description: 'Magnetic dry-erase boards and presentation panels', iconName: 'Grid', group: 'Non-IT', scope: 'Organization' },
+      { id: 'CAT011', name: 'Storage Cabinets', description: 'Filing cabinets, lockers and pedestal drawers', iconName: 'Box', group: 'Non-IT', scope: 'Organization' }
+    ];
+
+    if (!storedCategories) {
+      localStorage.setItem('it_categories', JSON.stringify(initialCategories));
+      storedCategories = JSON.stringify(initialCategories);
+    }
+    
+    let parsedCats = JSON.parse(storedCategories);
+    // Ensure default Non-IT items are merged if not present
+    const defaultNonIT = [
+      { id: 'CAT008', name: 'Chairs', description: 'Ergonomic mesh office chairs and executive seating', iconName: 'Briefcase', group: 'Non-IT', scope: 'Organization' },
+      { id: 'CAT009', name: 'Tables', description: 'Modular office desks, conference and standing tables', iconName: 'Grid', group: 'Non-IT', scope: 'Organization' },
+      { id: 'CAT010', name: 'Whiteboards', description: 'Magnetic dry-erase boards and presentation panels', iconName: 'Grid', group: 'Non-IT', scope: 'Organization' },
+      { id: 'CAT011', name: 'Storage Cabinets', description: 'Filing cabinets, lockers and pedestal drawers', iconName: 'Box', group: 'Non-IT', scope: 'Organization' }
+    ];
+    defaultNonIT.forEach(item => {
+      if (!parsedCats.some(c => c.name.toLowerCase() === item.name.toLowerCase())) {
+        parsedCats.push(item);
+      }
+    });
+
+    const employeeCategories = ['laptop', 'mouse', 'keyboard', 'headphones', 'mobile', 'headset'];
+    parsedCats = parsedCats.map(cat => ({
+      ...cat,
+      group: cat.group || (['chairs', 'tables', 'whiteboards', 'storage cabinets', 'desks', 'furniture'].some(k => cat.name.toLowerCase().includes(k)) ? 'Non-IT' : 'IT'),
+      scope: cat.scope || (employeeCategories.some(k => cat.name.toLowerCase().includes(k)) ? 'Employee' : 'Organization')
+    }));
+
+    localStorage.setItem('it_categories', JSON.stringify(parsedCats));
+    setCategories(parsedCats);
   }, []);
 
   // Utility to update state and localStorage
@@ -512,6 +604,11 @@ export const AssetProvider = ({ children }) => {
     localStorage.setItem('it_activity', JSON.stringify(data));
   };
 
+  const saveCategories = (data) => {
+    setCategories(data);
+    localStorage.setItem('it_categories', JSON.stringify(data));
+  };
+
   // Helper to add activity logs
   const logActivity = (activityName, details) => {
     const newLog = {
@@ -529,8 +626,9 @@ export const AssetProvider = ({ children }) => {
 
   // Assets CRUD
   const addAsset = (asset) => {
+    const nextNum = assets.length + 1;
     const newAsset = {
-      id: `${asset.type === "Laptop" ? "LT" : asset.type === "Monitor" ? "MN" : asset.type === "Mouse" ? "MS" : asset.type === "Keyboard" ? "KB" : asset.type === "Headset" ? "HD" : asset.type === "Printer" ? "PR" : asset.type === "Desktop" ? "DT" : "DS"}${String(assets.length + 1).padStart(4, '0')}`,
+      id: asset.id || `QITS${String(nextNum).padStart(4, '0')}`,
       ...asset,
       assignedTo: asset.assignedTo || null,
       status: asset.status || "Available",
@@ -554,8 +652,9 @@ export const AssetProvider = ({ children }) => {
 
   // Employees CRUD
   const addEmployee = (emp) => {
+    const nextNum = employees.length + 1;
     const newEmp = {
-      id: `EMP${String(employees.length + 1).padStart(3, '0')}`,
+      id: emp.id || `QEMP${String(nextNum).padStart(3, '0')}`,
       ...emp,
       status: emp.status || "Active",
       avatar: emp.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=faces"
@@ -678,8 +777,9 @@ export const AssetProvider = ({ children }) => {
 
   // Repairs Operations
   const addRepair = (repair) => {
+    const nextNum = repairs.length + 1;
     const newRepair = {
-      id: `REP${String(repairs.length + 1).padStart(5, '0')}`,
+      id: repair.id || `TKT${String(nextNum).padStart(4, '0')}`,
       ...repair,
       requestDate: new Date().toLocaleDateString(),
       status: "In Progress",
@@ -735,12 +835,87 @@ export const AssetProvider = ({ children }) => {
     }
   };
 
+  const acceptRepair = (repairId, adminName = "Rakesh Reddy (Admin)") => {
+    const repair = repairs.find(r => r.id === repairId);
+    if (!repair) return;
+
+    const updatedRepairs = repairs.map(r => {
+      if (r.id === repairId) {
+        return {
+          ...r,
+          acceptedBy: adminName,
+          assignedTo: adminName,
+          status: "In Progress",
+          updates: [
+            ...(r.updates || []),
+            {
+              date: new Date().toLocaleString(),
+              message: `Accepted by ${adminName} and assigned for resolution.`
+            }
+          ]
+        };
+      }
+      return r;
+    });
+    saveRepairs(updatedRepairs);
+
+    const updatedAssets = assets.map(a => a.id === repair.assetId ? { ...a, status: "Under Repair" } : a);
+    saveAssets(updatedAssets);
+
+    logActivity("Accept Repair", `Admin ${adminName} accepted repair ticket ${repairId}`);
+  };
+
+  const rejectRepair = (repairId, adminName = "Rakesh Reddy (Admin)") => {
+    const repair = repairs.find(r => r.id === repairId);
+    if (!repair) return;
+
+    const updatedRepairs = repairs.map(r => {
+      if (r.id === repairId) {
+        return {
+          ...r,
+          status: "Cancelled",
+          updates: [
+            ...(r.updates || []),
+            {
+              date: new Date().toLocaleString(),
+              message: `Rejected / Cancelled by ${adminName}.`
+            }
+          ]
+        };
+      }
+      return r;
+    });
+    saveRepairs(updatedRepairs);
+
+    const updatedAssets = assets.map(a => a.id === repair.assetId ? { ...a, status: "Available" } : a);
+    saveAssets(updatedAssets);
+
+    logActivity("Reject Repair", `Admin ${adminName} rejected repair ticket ${repairId}`);
+  };
+
   const loginUser = (username, password, role) => {
+    const cleanUser = (username || '').trim().toLowerCase();
     if (role === 'Admin') {
-      if (username === 'rakesh.reddy' && password === 'admin123') {
-        const adminSession = {
+      let adminSession = null;
+      if (cleanUser === 'teja' || cleanUser === 'teja.adusumilli' || cleanUser === 'teja adusumilli') {
+        adminSession = {
+          id: "EMP000",
+          name: "Teja Adusumilli",
+          username: "teja.adusumilli",
+          role: "Admin",
+          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces",
+          email: "teja.adusumilli@company.com",
+          phone: "+91 98765 43211",
+          department: "IT",
+          designation: "System Administrator",
+          location: "Hyderabad, India",
+          joiningDate: "15 Jan 2024"
+        };
+      } else if (cleanUser === 'rakesh.reddy' || cleanUser === 'rakesh' || cleanUser === 'rakesh reddy') {
+        adminSession = {
           id: "EMP001",
           name: "Rakesh Reddy",
+          username: "rakesh.reddy",
           role: "Admin",
           avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces",
           email: "rakesh.reddy@company.com",
@@ -750,13 +925,29 @@ export const AssetProvider = ({ children }) => {
           location: "Hyderabad, India",
           joiningDate: "01 Jan 2024"
         };
-        setCurrentUser(adminSession);
-        localStorage.setItem('it_current_user', JSON.stringify(adminSession));
-        return { success: true, user: adminSession };
+      } else {
+        const formattedName = username.trim().split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+        adminSession = {
+          id: `EMP${Math.floor(100 + Math.random() * 900)}`,
+          name: formattedName || "Admin",
+          username: cleanUser,
+          role: "Admin",
+          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces",
+          email: `${cleanUser}@company.com`,
+          phone: "+91 98765 43210",
+          department: "IT",
+          designation: "IT Administrator",
+          location: "Hyderabad, India",
+          joiningDate: "01 Jan 2024"
+        };
       }
-      return { success: false, message: "Invalid admin credentials (rakesh.reddy / admin123)." };
+
+      setCurrentUser(adminSession);
+      localStorage.setItem('it_current_user', JSON.stringify(adminSession));
+      logActivity("Admin Login", `${adminSession.name} logged in as Admin`);
+      return { success: true, user: adminSession };
     } else {
-      const emp = employees.find(e => e.username === username);
+      const emp = employees.find(e => e.username === cleanUser || e.name.toLowerCase() === cleanUser);
       if (emp) {
         const employeeSession = {
           ...emp,
@@ -810,9 +1001,68 @@ export const AssetProvider = ({ children }) => {
       returnAssets,
       addRepair,
       addRepairUpdate,
+      acceptRepair,
+      rejectRepair,
       logActivity,
       toast,
-      showToast
+      showToast,
+      guidelines,
+      updateGuidelines: (newGuidelines) => {
+        const updated = {
+          ...guidelines,
+          ...newGuidelines,
+          uploadedDate: new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
+        };
+        setGuidelines(updated);
+        localStorage.setItem('it_asset_guidelines', JSON.stringify(updated));
+        logActivity("Update Guidelines PDF", `Admin posted updated Asset Guidelines PDF: ${updated.fileName || updated.title}`);
+      },
+      announcements,
+      addAnnouncement: (newAnn) => {
+        const formatted = {
+          id: `ANN${String((announcements || []).length + 1).padStart(3, '0')}`,
+          date: new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
+          author: "IT Admin Desk",
+          type: newAnn.type || "General",
+          priority: newAnn.priority || "Medium",
+          ...newAnn
+        };
+        const updated = [formatted, ...(announcements || [])];
+        setAnnouncements(updated);
+        localStorage.setItem('it_announcements', JSON.stringify(updated));
+        logActivity("Post Announcement", `Admin posted announcement: "${formatted.title}"`);
+      },
+      deleteAnnouncement: (id) => {
+        const target = (announcements || []).find(a => a.id === id);
+        const updated = (announcements || []).filter(a => a.id !== id);
+        setAnnouncements(updated);
+        localStorage.setItem('it_announcements', JSON.stringify(updated));
+        if (target) {
+          logActivity("Delete Announcement", `Deleted announcement: "${target.title}"`);
+        }
+      },
+      categories,
+      addCategory: (categoryData) => {
+        const newCat = {
+          id: `CAT${String(categories.length + 1).padStart(3, '0')}`,
+          ...categoryData
+        };
+        saveCategories([...categories, newCat]);
+        logActivity("Add Category", `Added new asset category ${newCat.name}`);
+      },
+      updateCategory: (id, updatedData) => {
+        const list = categories.map(cat => cat.id === id ? { ...cat, ...updatedData } : cat);
+        saveCategories(list);
+        logActivity("Update Category", `Updated category ${updatedData.name || id}`);
+      },
+      deleteCategory: (id) => {
+        const target = categories.find(c => c.id === id);
+        const list = categories.filter(cat => cat.id !== id);
+        saveCategories(list);
+        if (target) {
+          logActivity("Delete Category", `Deleted asset category ${target.name}`);
+        }
+      }
     }}>
       {children}
     </AssetContext.Provider>

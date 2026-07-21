@@ -425,7 +425,6 @@ const Settings = () => {
               <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 <th className="pb-3 pr-4">Activity</th>
                 <th className="pb-3 px-4">Details</th>
-                <th className="pb-3 px-4">IP Address</th>
                 <th className="pb-3 px-4">Date & Time</th>
               </tr>
             </thead>
@@ -447,7 +446,6 @@ const Settings = () => {
                       <span>{act.activity}</span>
                     </td>
                     <td className="py-3.5 px-4 font-medium text-slate-600">{act.details}</td>
-                    <td className="py-3.5 px-4 font-mono text-slate-500">{act.ipAddress}</td>
                     <td className="py-3.5 px-4 text-slate-500 font-medium">{act.dateTime}</td>
                   </tr>
                 );

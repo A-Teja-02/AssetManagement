@@ -45,27 +45,28 @@ const MetricCard = ({
   const currentTheme = colorMaps[color] || colorMaps.blue;
 
   return (
-    <div className={`p-6 rounded-3xl border bg-white flex flex-col justify-between h-40 transition-all duration-300 shadow-sm hover:shadow-md ${currentTheme.bg}`}>
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{title}</p>
-          <h3 className="text-3xl font-extrabold text-slate-800 tracking-tight">{value}</h3>
-          {subtext && <p className="text-[10px] font-bold text-slate-400 mt-1">{subtext}</p>}
+    <div 
+      onClick={() => linkTo && navigate(linkTo)}
+      className={`p-3.5 rounded-2xl border bg-white flex flex-col justify-between min-h-[8.5rem] transition-all duration-200 shadow-xs hover:shadow-md hover:-translate-y-0.5 cursor-pointer group select-none relative overflow-hidden ${currentTheme.bg}`}
+      title={`Click to view ${title}`}
+    >
+      <div className="flex items-start justify-between gap-1.5 min-w-0">
+        <div className="space-y-0.5 min-w-0 flex-1">
+          <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider group-hover:text-slate-600 transition-colors truncate">{title}</p>
+          <h3 className="text-xl font-extrabold text-slate-800 tracking-tight leading-none mt-1">{value}</h3>
+          {subtext && <p className="text-[9px] font-semibold text-slate-400 truncate mt-1">{subtext}</p>}
         </div>
-        <div className={`p-3.5 rounded-2xl ${currentTheme.iconBg}`}>
-          <Icon className="h-6 w-6" />
+        <div className={`p-2 rounded-xl transition-transform group-hover:scale-105 shrink-0 ${currentTheme.iconBg}`}>
+          <Icon className="h-4 w-4" />
         </div>
       </div>
       
       {/* View Details Link */}
-      <div className="border-t border-slate-100/50 pt-4 flex items-center justify-between">
-        <button 
-          onClick={() => linkTo && navigate(linkTo)}
-          className={`text-xs font-bold flex items-center gap-1 transition-all ${currentTheme.link}`}
-        >
-          <span>{linkLabel}</span>
-        </button>
-        <ChevronRight className="h-4 w-4 text-slate-400" />
+      <div className="border-t border-slate-100/60 pt-2 flex items-center justify-between mt-2">
+        <span className={`text-[10px] font-extrabold flex items-center gap-1 transition-all ${currentTheme.link}`}>
+          {linkLabel}
+        </span>
+        <ChevronRight className="h-3 w-3 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
       </div>
     </div>
   );

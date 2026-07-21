@@ -5,6 +5,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 import Employees from './pages/Employees';
 import Assets from './pages/Assets';
+import Categories from './pages/Categories';
 import AssignAsset from './pages/AssignAsset';
 import ReturnAsset from './pages/ReturnAsset';
 import Repairs from './pages/Repairs';
@@ -40,6 +41,7 @@ function App() {
               <Route index element={<Dashboard />} />
               <Route path="employees" element={<Employees />} />
               <Route path="assets" element={<Assets />} />
+              <Route path="categories" element={<Categories />} />
               <Route path="assign-assets" element={<AssignAsset />} />
               <Route path="return-assets" element={<ReturnAsset />} />
               <Route path="repairs" element={<Repairs />} />

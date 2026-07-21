@@ -180,22 +180,30 @@ const Login = () => {
         {/* Sandbox test login cards */}
         <div className="pt-4 border-t border-slate-700/40 space-y-3">
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Quick Sandbox Test</p>
-          <div className="grid grid-cols-2 gap-3 text-[11px]">
+          <div className="grid grid-cols-3 gap-2 text-[10px]">
+            <button
+              type="button"
+              onClick={() => handleSandboxLogin('teja.adusumilli', 'admin123', 'Admin')}
+              className="p-2.5 border border-slate-700 hover:border-blue-500/50 bg-slate-900/30 rounded-2xl text-left hover:bg-slate-900/80 transition-all group"
+            >
+              <p className="font-bold text-white group-hover:text-blue-400 transition-all truncate">Teja (Admin)</p>
+              <p className="text-[8px] text-slate-500 font-semibold mt-0.5 truncate">teja.adusumilli</p>
+            </button>
             <button
               type="button"
               onClick={() => handleSandboxLogin('rakesh.reddy', 'admin123', 'Admin')}
-              className="p-3 border border-slate-700 hover:border-blue-500/50 bg-slate-900/30 rounded-2xl text-left hover:bg-slate-900/80 transition-all group"
+              className="p-2.5 border border-slate-700 hover:border-blue-500/50 bg-slate-900/30 rounded-2xl text-left hover:bg-slate-900/80 transition-all group"
             >
-              <p className="font-bold text-white group-hover:text-blue-400 transition-all">Login as Admin</p>
-              <p className="text-[9px] text-slate-500 font-semibold mt-0.5">rakesh.reddy / admin123</p>
+              <p className="font-bold text-white group-hover:text-blue-400 transition-all truncate">Rakesh (Admin)</p>
+              <p className="text-[8px] text-slate-500 font-semibold mt-0.5 truncate">rakesh.reddy</p>
             </button>
             <button
               type="button"
               onClick={() => handleSandboxLogin('rakesh.reddy', '', 'Employee')}
-              className="p-3 border border-slate-700 hover:border-blue-500/50 bg-slate-900/30 rounded-2xl text-left hover:bg-slate-900/80 transition-all group"
+              className="p-2.5 border border-slate-700 hover:border-blue-500/50 bg-slate-900/30 rounded-2xl text-left hover:bg-slate-900/80 transition-all group"
             >
-              <p className="font-bold text-white group-hover:text-blue-400 transition-all">Login as Employee</p>
-              <p className="text-[9px] text-slate-500 font-semibold mt-0.5">Username: rakesh.reddy</p>
+              <p className="font-bold text-white group-hover:text-blue-400 transition-all truncate">Employee</p>
+              <p className="text-[8px] text-slate-500 font-semibold mt-0.5 truncate">Employee Portal</p>
             </button>
           </div>
         </div>

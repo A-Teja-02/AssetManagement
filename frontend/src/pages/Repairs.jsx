@@ -13,18 +13,24 @@ import {
   ChevronRight,
   X,
   Send,
-  AlertTriangle
+  AlertTriangle,
+  UserCheck,
+  Check
 } from 'lucide-react';
 import { useAssetManager } from '../hooks/useAssetManager';
 import MetricCard from '../components/MetricCard';
+import AssetIconBadge from '../components/AssetIcon';
 
 const Repairs = () => {
   const { 
     repairs, 
     assets, 
     employees, 
+    currentUser,
     addRepair,
     addRepairUpdate,
+    acceptRepair,
+    rejectRepair,
     showToast
   } = useAssetManager();
 
@@ -55,8 +61,17 @@ const Repairs = () => {
   const [updateStatus, setUpdateStatus] = useState('In Progress');
   const [updateMessage, setUpdateMessage] = useState('');
 
+  // Admin identity
+  const currentAdminName = currentUser?.name ? `${currentUser.name} (Admin)` : 'Rakesh Reddy (Admin)';
+
   // 1. Calculate dynamic statistics
   const totalRepairsCount = repairs.length;
+  const myAcceptedCount = repairs.filter(r => 
+    r.acceptedBy && (
+      r.acceptedBy.toLowerCase().includes((currentUser?.name || 'Rakesh').toLowerCase()) ||
+      r.assignedTo?.toLowerCase().includes((currentUser?.name || 'Rakesh').toLowerCase())
+    )
+  ).length;
   const inProgressCount = repairs.filter(r => r.status === 'In Progress').length;
   const awaitingCount = repairs.filter(r => r.status === 'Awaiting Parts').length;
   const completedCount = repairs.filter(r => r.status === 'Completed').length;
@@ -66,10 +81,18 @@ const Repairs = () => {
   const filteredRepairs = repairs.filter(rep => {
     const asset = assets.find(a => a.id === rep.assetId);
     const reporter = employees.find(e => e.id === rep.reportedBy);
-    const searchString = `${rep.id} ${rep.assetId} ${asset ? asset.brand : ''} ${asset ? asset.model : ''} ${rep.issue} ${reporter ? reporter.name : ''} ${rep.status}`.toLowerCase();
+    const searchString = `${rep.id} ${rep.assetId} ${asset ? asset.brand : ''} ${asset ? asset.model : ''} ${rep.issue} ${reporter ? reporter.name : ''} ${rep.acceptedBy || ''} ${rep.status}`.toLowerCase();
     
     const matchesSearch = searchString.includes(searchTerm.toLowerCase());
-    const matchesTab = activeTab === 'All' ? true : rep.status === activeTab;
+    let matchesTab = true;
+    if (activeTab === 'My Requests') {
+      matchesTab = Boolean(rep.acceptedBy && (
+        rep.acceptedBy.toLowerCase().includes((currentUser?.name || 'Rakesh').toLowerCase()) ||
+        rep.assignedTo?.toLowerCase().includes((currentUser?.name || 'Rakesh').toLowerCase())
+      ));
+    } else if (activeTab !== 'All') {
+      matchesTab = rep.status === activeTab;
+    }
     
     return matchesSearch && matchesTab;
   });
@@ -153,8 +176,9 @@ const Repairs = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <MetricCard icon={Wrench} title="Total Repair Requests" value={totalRepairsCount} color="blue" linkTo="/repairs" />
+        <MetricCard icon={UserCheck} title="My Requests" value={myAcceptedCount} color="green" linkTo="/repairs" subtext={`Accepted by ${currentUser?.name || 'Rakesh'}`} />
         <MetricCard icon={Clock} title="In Progress" value={inProgressCount} color="green" linkTo="/repairs" />
         <MetricCard icon={AlertCircle} title="Awaiting Parts" value={awaitingCount} color="orange" linkTo="/repairs" />
         <MetricCard icon={CheckCircle} title="Completed" value={completedCount} color="purple" linkTo="/repairs" />
@@ -193,7 +217,7 @@ const Repairs = () => {
 
           {/* Filter tabs */}
           <div className="flex gap-4 border-b border-slate-100 text-xs font-semibold overflow-x-auto pb-1">
-            {['All', 'In Progress', 'Awaiting Parts', 'Completed', 'Cancelled'].map(tab => (
+            {['All', 'My Requests', 'In Progress', 'Awaiting Parts', 'Completed', 'Cancelled'].map(tab => (
               <button
                 key={tab}
                 onClick={() => { setActiveTab(tab); setCurrentPage(1); }}
@@ -201,7 +225,7 @@ const Repairs = () => {
                   activeTab === tab ? 'border-blue-600 text-blue-600 font-bold' : 'border-transparent text-slate-400'
                 }`}
               >
-                {tab}
+                {tab} {tab === 'My Requests' ? `(${myAcceptedCount})` : ''}
               </button>
             ))}
           </div>
@@ -217,8 +241,9 @@ const Repairs = () => {
                   <th className="pb-3 px-4">Reported By</th>
                   <th className="pb-3 px-4">Issue</th>
                   <th className="pb-3 px-4">Status</th>
+                  <th className="pb-3 px-4">Accepted By</th>
                   <th className="pb-3 px-4">Request Date</th>
-                  <th className="pb-3 pl-4 text-right">Actions</th>
+                  <th className="pb-3 pl-4 text-right">Accept / Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -246,7 +271,7 @@ const Repairs = () => {
                         <td className="py-3.5 px-4 font-semibold text-slate-800">
                           {asset ? (
                             <div className="flex items-center gap-2">
-                              <img src={asset.image} className="h-6 w-6 rounded-lg object-cover shrink-0 border" alt="" />
+                              <AssetIconBadge type={asset.type} className="h-6 w-6 rounded-md" iconSize="h-3.5 w-3.5" />
                               <span>{asset.id} &bull; {asset.model}</span>
                             </div>
                           ) : (
@@ -272,14 +297,54 @@ const Repairs = () => {
                             {rep.status}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-slate-500">{rep.requestDate.split(' ')[0]}</td>
+                        <td className="py-3.5 px-4 font-semibold">
+                          {rep.acceptedBy ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200/60 whitespace-nowrap">
+                              <UserCheck className="h-3 w-3 text-emerald-600 shrink-0" />
+                              <span>{rep.acceptedBy}</span>
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-medium text-slate-400 italic">Unassigned</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-500 whitespace-nowrap">{rep.requestDate.split(' ')[0]}</td>
                         <td className="py-3.5 pl-4 text-right">
-                          <button 
-                            className={`p-1.5 rounded-lg ${isSelected ? 'bg-blue-100 text-blue-700' : 'hover:bg-slate-100 text-blue-600'}`}
-                            title="Select"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            {!rep.acceptedBy && rep.status !== 'Completed' && rep.status !== 'Cancelled' ? (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    acceptRepair(rep.id, currentAdminName);
+                                    showToast(`Accepted ticket ${rep.id}! Assigned to ${currentAdminName}.`);
+                                  }}
+                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[10px] flex items-center gap-1 shadow-sm transition-all cursor-pointer"
+                                  title="Accept Ticket"
+                                >
+                                  <Check className="h-3 w-3" />
+                                  <span>Accept</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    rejectRepair(rep.id, currentAdminName);
+                                    showToast(`Rejected ticket ${rep.id}.`, 'error');
+                                  }}
+                                  className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer"
+                                  title="Reject Ticket"
+                                >
+                                  <X className="h-3 w-3" />
+                                  <span>Reject</span>
+                                </button>
+                              </>
+                            ) : (
+                              <button 
+                                onClick={() => setSelectedRepairId(rep.id)}
+                                className={`p-1.5 rounded-lg ${isSelected ? 'bg-blue-100 text-blue-700' : 'hover:bg-slate-100 text-blue-600'}`}
+                                title="Select / View Details"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -359,9 +424,9 @@ const Repairs = () => {
               {/* Asset header */}
               <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                 <div className="flex items-center gap-3">
-                  <img src={selectedAsset?.image} className="h-10 w-10 rounded-xl object-cover border" alt="" />
+                  <AssetIconBadge type={selectedAsset?.type} className="h-10 w-10 rounded-xl" iconSize="h-5 w-5" />
                   <div>
-                    <h4 className="font-extrabold text-slate-800 text-sm leading-tight">{selectedAsset?.brand} {selectedAsset?.model}</h4>
+                    <h4 className="font-extrabold text-slate-800 text-sm leading-tight">{selectedAsset ? `${selectedAsset.brand} ${selectedAsset.model}` : selectedRepair.assetId}</h4>
                     <p className="text-[10px] text-slate-400 font-mono mt-0.5">{selectedRepair.assetId}</p>
                   </div>
                 </div>
@@ -409,9 +474,28 @@ const Repairs = () => {
                     {selectedRepair.priority}
                   </span>
                 </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-slate-400">Accepted By</span>
+                  {selectedRepair.acceptedBy ? (
+                    <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-bold text-[11px] flex items-center gap-1">
+                      <UserCheck className="h-3.5 w-3.5" />
+                      {selectedRepair.acceptedBy}
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        acceptRepair(selectedRepair.id, currentAdminName);
+                        showToast(`Accepted ticket ${selectedRepair.id}! Assigned to ${currentAdminName}.`);
+                      }}
+                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+                    >
+                      + Accept Ticket
+                    </button>
+                  )}
+                </div>
                 <div className="flex justify-between">
                   <span className="font-semibold text-slate-400">Assigned To</span>
-                  <span className="font-bold text-slate-700">{selectedRepair.assignedTo}</span>
+                  <span className="font-bold text-slate-700">{selectedRepair.assignedTo || 'IT Support Team'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-semibold text-slate-400">Est. Completion</span>

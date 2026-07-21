@@ -24,7 +24,7 @@ const ActivityLog = () => {
 
   // Filter logs based on search
   const filteredLogs = activity.filter(log => {
-    const searchString = `${log.activity} ${log.details} ${log.ipAddress} ${log.dateTime} ${log.user}`.toLowerCase();
+    const searchString = `${log.activity} ${log.details} ${log.dateTime} ${log.user}`.toLowerCase();
     return searchString.includes(searchTerm.toLowerCase());
   });
 
@@ -70,14 +70,13 @@ const ActivityLog = () => {
                 <th className="pb-3 pr-4">Activity</th>
                 <th className="pb-3 px-4">Details</th>
                 <th className="pb-3 px-4">Operator</th>
-                <th className="pb-3 px-4">IP Address</th>
                 <th className="pb-3 px-4">Date & Time</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {paginatedLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-400">
+                  <td colSpan={4} className="py-8 text-center text-slate-400">
                     No matching activity logs found.
                   </td>
                 </tr>
@@ -109,7 +108,6 @@ const ActivityLog = () => {
                       </td>
                       <td className="py-4 px-4 font-medium text-slate-600 leading-relaxed">{log.details}</td>
                       <td className="py-4 px-4 font-bold text-slate-800">{log.user}</td>
-                      <td className="py-4 px-4 font-mono text-slate-500">{log.ipAddress}</td>
                       <td className="py-4 px-4 text-slate-500 font-medium">{log.dateTime}</td>
                     </tr>
                   );

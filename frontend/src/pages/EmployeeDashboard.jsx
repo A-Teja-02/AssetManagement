@@ -18,9 +18,12 @@ import {
   Clock,
   CheckCircle,
   HelpCircle,
+  Download,
   HelpCircle as ShieldCheck
 } from 'lucide-react';
 import { useAssetManager } from '../hooks/useAssetManager';
+import { downloadOrOpenGuidelinesPdf } from '../utils/downloadDocument';
+import AssetIconBadge from '../components/AssetIcon';
 
 const EmployeeDashboard = () => {
   const { 
@@ -28,13 +31,15 @@ const EmployeeDashboard = () => {
     assets, 
     repairs, 
     activity, 
+    guidelines,
+    announcements,
     addRepair,
     logActivity,
     showToast 
   } = useAssetManager();
 
   // Active Modals state
-  const [activeModal, setActiveModal] = useState(null); // 'raise' | 'request' | 'status' | 'guidelines' | 'all_assets'
+  const [activeModal, setActiveModal] = useState(null); // 'raise' | 'request' | 'status' | 'guidelines' | 'all_assets' | 'announcements'
   const [selectedRepairId, setSelectedRepairId] = useState(null);
 
   // Form states for raising a repair request
@@ -51,19 +56,45 @@ const EmployeeDashboard = () => {
   // If session is empty, avoid crashing
   if (!currentUser) return null;
 
-  // Filter items matching current logged-in employee
-  const myAssignedAssets = assets.filter(a => a.assignedTo === currentUser.id);
+  // Filter items matching current logged-in employee (exclude Desktop)
+  const myAssignedAssets = assets.filter(a => a.assignedTo === currentUser.id && a.type !== 'Desktop');
   const myRepairs = repairs.filter(r => r.reportedBy === currentUser.id);
   
   // Sort repairs so latest is first
   const sortedRepairs = [...myRepairs].sort((a, b) => b.id.localeCompare(a.id));
 
-  // Filter activities logged by this employee or regarding this employee
-  const myActivities = activity.filter(act => 
-    act.user === currentUser.name || 
-    act.details.includes(currentUser.name) || 
-    act.details.includes(currentUser.id)
-  );
+  // Filter activities logged specifically for this employee's personal asset/ticket timeline
+  const myActivities = activity.filter(act => {
+    const details = act.details || '';
+    const detailsLower = details.toLowerCase();
+
+    // 1. Exclude ALL admin system management actions
+    const adminActions = [
+      'logged in as admin',
+      'as admin',
+      'added new employee',
+      'deleted asset',
+      'deleted employee',
+      'updated employee',
+      'added category',
+      'deleted category',
+      'updated category',
+      'imported employees',
+      'imported assets'
+    ];
+    if (adminActions.some(action => detailsLower.includes(action))) {
+      return false;
+    }
+
+    // 2. Must specifically pertain to this employee's name, ID, assigned assets, or repairs
+    const mentionsEmployeeName = Boolean(currentUser.name && details.includes(currentUser.name));
+    const mentionsEmployeeId = Boolean(currentUser.id && details.includes(currentUser.id));
+    const pertainsToMyAsset = myAssignedAssets.some(a => details.includes(a.id));
+    const pertainsToMyRepair = myRepairs.some(r => details.includes(r.id));
+    const isMySelfServiceAction = act.type === 'Report Fault' || act.type === 'Request Asset';
+
+    return mentionsEmployeeName || mentionsEmployeeId || pertainsToMyAsset || pertainsToMyRepair || isMySelfServiceAction;
+  });
 
   // Metrics calculations
   const totalAssignedCount = myAssignedAssets.length;
@@ -125,6 +156,39 @@ const EmployeeDashboard = () => {
   return (
     <div className="space-y-8 animate-fade-in font-sans">
       
+      {/* Personalized Welcome Hero Banner */}
+      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="space-y-1.5 z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[11px] font-bold tracking-wide">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Employee Self-Service Portal</span>
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+            Welcome back, {currentUser?.name || 'Rahul Sharma'} 👋
+          </h2>
+          <p className="text-xs text-blue-100/90 font-medium">
+            Department: <span className="font-bold text-white">{currentUser?.department || 'IT'}</span> &bull; Employee ID: <span className="font-bold text-white">{currentUser?.id || 'EMP001'}</span> &bull; Active Devices: <span className="font-bold text-white">{activeCount}</span>
+          </p>
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-2.5 z-10">
+          <button
+            onClick={() => setActiveModal('raise')}
+            className="px-4 py-2.5 rounded-2xl bg-white text-blue-700 hover:bg-blue-50 font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <Wrench className="h-4 w-4 text-blue-600" />
+            <span>Report Device Fault</span>
+          </button>
+          <button
+            onClick={() => setActiveModal('request')}
+            className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <ShoppingBag className="h-4 w-4" />
+            <span>Request New Asset</span>
+          </button>
+        </div>
+      </div>
+
       {/* 4 KPI Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
@@ -202,28 +266,33 @@ const EmployeeDashboard = () => {
               ) : (
                 myAssignedAssets.slice(0, 5).map(asset => (
                   <div key={asset.id} className="py-3 flex items-center justify-between gap-3 group">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <img src={asset.image} alt={asset.model} className="h-10 w-10 rounded-xl object-cover border shrink-0 bg-slate-50" />
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-all">{asset.brand} {asset.model}</p>
-                          <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[8px] font-extrabold uppercase shrink-0">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <AssetIconBadge type={asset.type} className="h-10 w-10 rounded-xl shrink-0" iconSize="h-5 w-5" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-xs font-extrabold text-slate-800 group-hover:text-blue-600 transition-all truncate">{asset.brand} {asset.model}</p>
+                          <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 text-[8px] font-extrabold uppercase shrink-0 border border-blue-100/60">
                             {asset.type}
                           </span>
                         </div>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Asset ID: {asset.id} &bull; Serial No: {asset.serialNumber}</p>
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5 truncate">Asset ID: {asset.id} &bull; Serial No: {asset.serialNumber}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right hidden sm:block">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Assigned On</p>
-                        <p className="text-[10px] text-slate-700 font-semibold mt-0.5">{asset.purchaseDate || '10 May 2024'}</p>
+                    
+                    <div className="flex items-center gap-4 shrink-0">
+                      <div className="text-right w-28 shrink-0 hidden sm:block">
+                        <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Assigned On</p>
+                        <p className="text-[10px] font-bold text-slate-700 mt-0.5">{asset.purchaseDate || '10 May 2024'}</p>
                       </div>
-                      <span className={`px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wide shrink-0 ${
-                        asset.status === 'Assigned' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-                      }`}>
-                        {asset.status === 'Assigned' ? 'Active' : 'Under Repair'}
-                      </span>
+                      <div className="w-24 flex justify-end shrink-0">
+                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-wide inline-block text-center min-w-[85px] shadow-2xs ${
+                          asset.status === 'Assigned' 
+                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/80' 
+                            : 'bg-amber-50 text-amber-600 border border-amber-200/80'
+                        }`}>
+                          {asset.status === 'Assigned' ? 'Active' : 'Under Repair'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -318,7 +387,7 @@ const EmployeeDashboard = () => {
                   <Plus className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-800">Raise Request</p>
+                  <p className="text-xs font-bold text-slate-800">Raise Ticket</p>
                   <p className="text-[9px] text-slate-400 font-medium mt-1 leading-relaxed">Report issues or request support</p>
                 </div>
               </button>
@@ -332,7 +401,7 @@ const EmployeeDashboard = () => {
                   <ShoppingBag className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-800">Request New</p>
+                  <p className="text-xs font-bold text-slate-800">New Ticket</p>
                   <p className="text-[9px] text-slate-400 font-medium mt-1 leading-relaxed">Request new IT equipment</p>
                 </div>
               </button>
@@ -372,25 +441,47 @@ const EmployeeDashboard = () => {
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-800">Recent Announcements</h3>
-              <button className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-all">View All</button>
+              <button 
+                onClick={() => setActiveModal('announcements')}
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-all cursor-pointer"
+              >
+                View All ({announcements?.length || 0})
+              </button>
             </div>
 
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2 relative group hover:bg-white hover:border-blue-500 hover:shadow-sm transition-all cursor-pointer">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl shrink-0 mt-0.5">
-                  <Info className="h-4.5 w-4.5" />
+            {(!announcements || announcements.length === 0) ? (
+              <p className="text-xs text-slate-400 font-semibold py-3">No active announcements posted.</p>
+            ) : (
+              announcements.slice(0, 2).map((ann) => (
+                <div 
+                  key={ann.id}
+                  onClick={() => setActiveModal('announcements')}
+                  className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2 relative group hover:bg-white hover:border-blue-500 hover:shadow-sm transition-all cursor-pointer"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-blue-50 text-blue-600 rounded-xl shrink-0 mt-0.5">
+                      <Info className="h-4.5 w-4.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-xs font-bold text-slate-800 truncate">{ann.title}</h4>
+                        <span className={`px-2 py-0.5 text-[9px] font-extrabold rounded-md border ${
+                          ann.priority === 'High' || ann.priority === 'Urgent' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-blue-50 text-blue-600 border-blue-200'
+                        }`}>
+                          {ann.type || 'General'}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-semibold mt-1 line-clamp-2 leading-relaxed">{ann.message}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-bold pt-2 border-t border-slate-200/50 pl-8">
+                    <Calendar className="h-3 w-3" />
+                    <span>{ann.date} &bull; {ann.author}</span>
+                  </div>
+                  <ChevronRight className="absolute right-3 top-[40%] h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-all" />
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-800">System Maintenance</h4>
-                  <p className="text-[10px] text-slate-400 font-semibold mt-1">System will be under maintenance this Sunday from 2:00 AM to 4:00 AM.</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-bold pt-2 border-t border-slate-200/50 pl-8">
-                <Calendar className="h-3 w-3" />
-                <span>16 May 2024 &bull; IT Admin</span>
-              </div>
-              <ChevronRight className="absolute right-3 top-[40%] h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-all" />
-            </div>
+              ))
+            )}
           </div>
 
           {/* Recent Activity Timeline */}
@@ -694,6 +785,72 @@ const EmployeeDashboard = () => {
                       <p className="text-[10px] text-slate-400 font-medium leading-relaxed">{selectedRepairDetails.description}</p>
                     </div>
 
+                    {/* Visual Progress Stepper Bar */}
+                    <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
+                      <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Ticket Progress Tracker</p>
+                      
+                      <div className="flex items-center justify-between relative px-2">
+                        {/* Step 1: Raised */}
+                        <div className="flex flex-col items-center gap-1 z-10">
+                          <div className="h-7 w-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shadow-xs">
+                            1
+                          </div>
+                          <span className="text-[9px] font-bold text-slate-700">Raised</span>
+                        </div>
+
+                        {/* Step 2: Accepted */}
+                        <div className="flex flex-col items-center gap-1 z-10">
+                          <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
+                            selectedRepairDetails.acceptedBy 
+                              ? 'bg-emerald-600 text-white shadow-xs' 
+                              : 'bg-slate-200 text-slate-400'
+                          }`}>
+                            2
+                          </div>
+                          <span className={`text-[9px] font-bold ${selectedRepairDetails.acceptedBy ? 'text-emerald-700' : 'text-slate-400'}`}>
+                            {selectedRepairDetails.acceptedBy ? 'Accepted' : 'Pending Admin'}
+                          </span>
+                        </div>
+
+                        {/* Step 3: In Progress */}
+                        <div className="flex flex-col items-center gap-1 z-10">
+                          <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
+                            selectedRepairDetails.status === 'In Progress' || selectedRepairDetails.status === 'Awaiting Parts' || selectedRepairDetails.status === 'Completed' || selectedRepairDetails.status === 'Resolved'
+                              ? 'bg-blue-600 text-white shadow-xs' 
+                              : 'bg-slate-200 text-slate-400'
+                          }`}>
+                            3
+                          </div>
+                          <span className={`text-[9px] font-bold ${selectedRepairDetails.status === 'In Progress' || selectedRepairDetails.status === 'Awaiting Parts' ? 'text-blue-700' : 'text-slate-400'}`}>
+                            {selectedRepairDetails.status === 'Awaiting Parts' ? 'Awaiting Parts' : 'In Progress'}
+                          </span>
+                        </div>
+
+                        {/* Step 4: Resolved */}
+                        <div className="flex flex-col items-center gap-1 z-10">
+                          <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
+                            selectedRepairDetails.status === 'Completed' || selectedRepairDetails.status === 'Resolved'
+                              ? 'bg-emerald-600 text-white shadow-xs' 
+                              : 'bg-slate-200 text-slate-400'
+                          }`}>
+                            4
+                          </div>
+                          <span className={`text-[9px] font-bold ${selectedRepairDetails.status === 'Completed' || selectedRepairDetails.status === 'Resolved' ? 'text-emerald-700' : 'text-slate-400'}`}>
+                            Resolved
+                          </span>
+                        </div>
+                      </div>
+
+                      {selectedRepairDetails.acceptedBy && (
+                        <div className="mt-2 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px]">
+                          <span className="text-slate-400 font-medium">Assigned IT Admin:</span>
+                          <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/60">
+                            ✓ {selectedRepairDetails.acceptedBy}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="space-y-3">
                       <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Progress History Logs</h5>
                       <div className="relative pl-6 space-y-4 border-l border-slate-100 ml-3">
@@ -751,10 +908,43 @@ const EmployeeDashboard = () => {
 
             <div className="space-y-4 text-xs text-slate-600 leading-relaxed max-h-[50vh] overflow-y-auto pr-1">
               
+              {/* Official Admin PDF Banner */}
+              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="p-3 bg-red-50 text-red-600 rounded-xl border border-red-100 shrink-0">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-extrabold text-slate-800 text-xs truncate">{guidelines?.title || 'Quadrant IT Asset Usage Guidelines 2026'}</h4>
+                      <span className="px-2 py-0.5 text-[9px] font-extrabold bg-blue-50 text-blue-700 rounded-md border border-blue-100 shrink-0">
+                        {guidelines?.version || 'v2.4'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">{guidelines?.summary}</p>
+                    <div className="flex items-center gap-3 text-[10px] text-slate-400 font-semibold mt-2">
+                      <span>File: <strong className="text-slate-700">{guidelines?.fileName || 'Quadrant_IT_Asset_Policy_2026.pdf'}</strong></span>
+                      <span>Date: {guidelines?.uploadedDate}</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    showToast(`Opening & Downloading ${guidelines?.fileName || 'Asset_Guidelines.pdf'}...`, 'info');
+                    downloadOrOpenGuidelinesPdf(guidelines);
+                  }}
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/10 transition-all shrink-0 cursor-pointer"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>Download / Open PDF</span>
+                </button>
+              </div>
+
               <div className="space-y-2">
                 <h4 className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 bg-blue-600 rounded-full"></span>
-                  <span>1. Safe Handing & Maintenance</span>
+                  <span>1. Safe Handling & Maintenance</span>
                 </h4>
                 <p className="pl-3.5 text-slate-400">All assets assigned to employees are properties of the company. Please keep laptops clean, avoid liquids in vicinity, and shut down devices periodically to ensure cooling system efficiency.</p>
               </div>
@@ -831,7 +1021,7 @@ const EmployeeDashboard = () => {
                       <td className="py-3.5 pr-3 font-bold text-blue-600">{asset.id}</td>
                       <td className="py-3.5 px-3">
                         <div className="flex items-center gap-2.5">
-                          <img src={asset.image} alt="" className="h-7 w-7 rounded-lg object-cover border bg-slate-50 shrink-0" />
+                          <AssetIconBadge type={asset.type} className="h-7 w-7 rounded-lg shrink-0" iconSize="h-3.5 w-3.5" />
                           <div>
                             <p className="font-bold text-slate-800">{asset.brand} {asset.model}</p>
                             <p className="text-[9px] text-slate-400 font-semibold">{asset.type}</p>
@@ -872,6 +1062,60 @@ const EmployeeDashboard = () => {
                 className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all w-full sm:w-auto"
               >
                 Close Inventory
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. All Recent Announcements Modal */}
+      {activeModal === 'announcements' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
+          <div className="bg-white border border-slate-200 rounded-[2rem] max-w-2xl w-full p-6 shadow-2xl space-y-4 relative z-10 animate-scale-in max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                <Info className="h-4.5 w-4.5 text-blue-600" />
+                <span>Company Broadcast Announcements ({(announcements || []).length})</span>
+              </h3>
+              <button onClick={() => setActiveModal(null)} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-all">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+              {(!announcements || announcements.length === 0) ? (
+                <p className="text-xs text-slate-400 font-semibold py-6 text-center">No announcements broadcasted yet.</p>
+              ) : (
+                announcements.map((ann) => (
+                  <div key={ann.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <h4 className="font-extrabold text-slate-800 text-xs">{ann.title}</h4>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 text-[9px] font-extrabold rounded-md border ${
+                          ann.priority === 'High' || ann.priority === 'Urgent' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-blue-50 text-blue-600 border-blue-200'
+                        }`}>
+                          {ann.type || 'General'}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-bold">{ann.date}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">{ann.message}</p>
+                    <p className="text-[10px] text-slate-400 font-semibold pt-1 border-t border-slate-200/50">
+                      Author: {ann.author}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setActiveModal(null)}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/10 transition-all"
+              >
+                Close Announcements
               </button>
             </div>
           </div>

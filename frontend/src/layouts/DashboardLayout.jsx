@@ -33,13 +33,13 @@ const DashboardLayout = () => {
         <Header />
 
         {/* Inner Scrollable Page Views */}
-        <main className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-7xl mx-auto space-y-8">
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-7xl mx-auto space-y-6">
             <Outlet />
           </div>
           
           {/* Footer matches mockup */}
-          <footer className="max-w-7xl mx-auto mt-12 pb-8 text-center text-xs text-slate-400 font-semibold">
+          <footer className="max-w-7xl mx-auto mt-8 pb-6 text-center text-xs text-slate-400 font-semibold">
             &copy; 2026 Quadrant IT Services. All rights reserved.
           </footer>
         </main>
