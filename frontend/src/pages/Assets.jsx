@@ -396,34 +396,46 @@ const Assets = () => {
             </div>
 
             {/* Import Excel Trigger */}
-            <button 
-              type="button"
-              onClick={() => setIsImportModalOpen(true)}
-              className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-full border border-emerald-200 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-700 font-bold text-xs transition-all cursor-pointer shrink-0"
-            >
-              <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
-              <span>Import</span>
-            </button>
+            <div className="relative group">
+              <button 
+                type="button"
+                onClick={() => setIsImportModalOpen(true)}
+                className="h-8 w-8 rounded-full border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 flex items-center justify-center transition-all cursor-pointer shadow-xs shrink-0"
+              >
+                <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-bold z-30 shadow-md">
+                Import Assets
+              </div>
+            </div>
 
             {/* Export Trigger */}
-            <button 
-              type="button"
-              onClick={handleExport}
-              className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer shrink-0"
-            >
-              <Download className="h-3.5 w-3.5" />
-              <span>Export</span>
-            </button>
+            <div className="relative group">
+              <button 
+                type="button"
+                onClick={handleExport}
+                className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-all cursor-pointer shadow-xs shrink-0"
+              >
+                <Download className="h-4 w-4" />
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-bold z-30 shadow-md">
+                Export Assets
+              </div>
+            </div>
 
             {/* Add Asset Trigger (Circular + Button) */}
-            <button 
-              type="button"
-              onClick={handleOpenAddModal}
-              title="Add Asset"
-              className="h-8 w-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md shadow-blue-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
+            <div className="relative group">
+              <button 
+                type="button"
+                onClick={handleOpenAddModal}
+                className="h-8 w-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md shadow-blue-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-bold z-30 shadow-md">
+                Add Asset
+              </div>
+            </div>
           </div>
         </div>
 

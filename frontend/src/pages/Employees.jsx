@@ -13,6 +13,7 @@ import {
   ChevronLeft, 
   ChevronRight,
   FileSpreadsheet,
+  Download,
   X,
   PlusCircle,
   Briefcase,
@@ -208,6 +209,23 @@ const Employees = () => {
     };
   };
 
+  const handleExportEmployees = () => {
+    const headers = "Employee ID,Name,Department,Designation,Email,Phone,Status\n";
+    const rows = employees.map(emp => {
+      return `"${emp.id}","${emp.name}","${emp.department}","${emp.designation}","${emp.email}","${emp.phone}","${emp.status}"`;
+    }).join("\n");
+    
+    const blob = new Blob([headers + rows], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Employees_Export_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Employees list exported successfully');
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Breadcrumbs */}
@@ -263,24 +281,46 @@ const Employees = () => {
             </select>
 
             {/* Excel Import Trigger */}
-            <button 
-              type="button"
-              onClick={() => setIsImportModalOpen(true)}
-              className="flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl border border-emerald-200 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-700 font-bold text-xs transition-all cursor-pointer shadow-xs shrink-0"
-            >
-              <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
-              <span>Import</span>
-            </button>
+            <div className="relative group">
+              <button 
+                type="button"
+                onClick={() => setIsImportModalOpen(true)}
+                className="h-8 w-8 rounded-full border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 flex items-center justify-center transition-all cursor-pointer shadow-xs shrink-0"
+              >
+                <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-bold z-30 shadow-md">
+                Import Employees
+              </div>
+            </div>
+
+            {/* Excel Export Trigger */}
+            <div className="relative group">
+              <button 
+                type="button"
+                onClick={handleExportEmployees}
+                className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-all cursor-pointer shadow-xs shrink-0"
+              >
+                <Download className="h-4 w-4" />
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-bold z-30 shadow-md">
+                Export Employees
+              </div>
+            </div>
 
             {/* Add Employee Trigger */}
-            <button 
-              type="button"
-              onClick={handleOpenAddModal}
-              className="flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-all shadow-md shadow-blue-500/10 cursor-pointer shrink-0"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Employee</span>
-            </button>
+            <div className="relative group">
+              <button 
+                type="button"
+                onClick={handleOpenAddModal}
+                className="h-8 w-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-all shadow-md shadow-blue-500/10 hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-bold z-30 shadow-md">
+                Add Employee
+              </div>
+            </div>
           </div>
         </div>
 
