@@ -15,6 +15,7 @@ import {
   ChevronDown,
   Check,
   Download,
+  Upload,
   FileSpreadsheet,
   X,
   TrendingUp
@@ -45,13 +46,18 @@ const Assets = () => {
   const [scopeFilter, setScopeFilter] = useState('All');
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [showScopeGlass, setShowScopeGlass] = useState(false);
+  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
+  const typeDropdownRef = useRef(null);
   const scopeRef = useRef(null);
 
-  // Outside click for scope glass pill dropdown
+  // Outside click for dropdowns
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (scopeRef.current && !scopeRef.current.contains(e.target)) {
         setShowScopeGlass(false);
+      }
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(e.target)) {
+        setIsTypeDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -344,16 +350,38 @@ const Assets = () => {
               />
             </div>
             
-            {/* Type filter */}
-            <select
-              value={typeFilter}
-              onChange={e => setTypeFilter(e.target.value)}
-              className="px-2.5 py-1.5 border border-slate-200 rounded-xl text-xs bg-slate-50 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold cursor-pointer"
-            >
-              {assetTypes.map(t => (
-                <option key={t} value={t}>{t === 'All' ? 'All Types' : t}</option>
-              ))}
-            </select>
+            {/* Custom Type filter Dropdown */}
+            <div className="relative" ref={typeDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
+                className="flex items-center justify-between gap-1.5 px-3 py-1.5 border border-slate-200 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold cursor-pointer transition-all min-w-[110px]"
+              >
+                <span>{typeFilter === 'All' ? 'All Types' : typeFilter}</span>
+                <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${isTypeDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isTypeDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1.5 w-48 bg-white border border-slate-200/80 rounded-2xl shadow-xl py-1 z-30 animate-scale-in text-xs font-semibold text-slate-700">
+                  {assetTypes.map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => {
+                        setTypeFilter(t);
+                        setIsTypeDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                        typeFilter === t ? 'bg-blue-50/50 text-blue-600 font-bold' : ''
+                      }`}
+                    >
+                      <span>{t === 'All' ? 'All Types' : t}</span>
+                      {typeFilter === t && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Apple Liquid Glass Scope Selector */}
             <div className="relative" ref={scopeRef}>
@@ -402,7 +430,7 @@ const Assets = () => {
                 onClick={() => setIsImportModalOpen(true)}
                 className="h-8 w-8 rounded-full border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 flex items-center justify-center transition-all cursor-pointer shadow-xs shrink-0"
               >
-                <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+                <Download className="h-4 w-4 text-emerald-600" />
               </button>
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-bold z-30 shadow-md">
                 Import Assets
@@ -416,7 +444,7 @@ const Assets = () => {
                 onClick={handleExport}
                 className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-all cursor-pointer shadow-xs shrink-0"
               >
-                <Download className="h-4 w-4" />
+                <Upload className="h-4 w-4 text-slate-600" />
               </button>
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-bold z-30 shadow-md">
                 Export Assets

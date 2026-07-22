@@ -319,20 +319,6 @@ const Employees = () => {
               )}
             </div>
 
-            {/* Excel Export Trigger */}
-            <div className="relative group">
-              <button 
-                type="button"
-                onClick={handleExportEmployees}
-                className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-all cursor-pointer shadow-xs shrink-0"
-              >
-                <Upload className="h-4 w-4 text-slate-600" />
-              </button>
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-bold z-30 shadow-md">
-                Export Employees
-              </div>
-            </div>
-
             {/* Excel Import Trigger */}
             <div className="relative group">
               <button 
@@ -344,6 +330,20 @@ const Employees = () => {
               </button>
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-bold z-30 shadow-md">
                 Import Employees
+              </div>
+            </div>
+
+            {/* Excel Export Trigger */}
+            <div className="relative group">
+              <button 
+                type="button"
+                onClick={handleExportEmployees}
+                className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-all cursor-pointer shadow-xs shrink-0"
+              >
+                <Upload className="h-4 w-4 text-slate-600" />
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-bold z-30 shadow-md">
+                Export Employees
               </div>
             </div>
 
