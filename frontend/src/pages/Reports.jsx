@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Laptop, 
   CheckCircle, 
@@ -13,11 +13,17 @@ import {
   FileText, 
   FileSpreadsheet, 
   ChevronRight,
+  ChevronDown,
+  Check,
   Download,
   UploadCloud,
   FileUp,
   X,
   ShieldCheck,
+  Search,
+  Building2,
+  User,
+  Layers,
   CheckCircle2 as VerifiedBadge
 } from 'lucide-react';
 import { 
@@ -37,7 +43,7 @@ import Avatar from '../components/Avatar';
 import { downloadOrOpenGuidelinesPdf } from '../utils/downloadDocument';
 
 const Reports = () => {
-  const { assets, employees, repairs, activity, guidelines, updateGuidelines, showToast } = useAssetManager();
+  const { assets, employees, repairs, activity, categories, guidelines, updateGuidelines, showToast } = useAssetManager();
   const [activeTab, setActiveTab] = useState('Overview');
   const [dateRange, setDateRange] = useState('01 Jul 2026 - 10 Jul 2026');
 
@@ -138,14 +144,229 @@ const Reports = () => {
     { name: 'Others', value: 10, color: '#06b6d4', label: 'Others (10%)' }
   ];
 
+  // Custom Report Generator state
+  const [reportType, setReportType] = useState('category');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All');
+  const [selectedDeptFilter, setSelectedDeptFilter] = useState('All');
+  const [selectedEmpFilter, setSelectedEmpFilter] = useState('All');
+  const [selectedOwnershipFilter, setSelectedOwnershipFilter] = useState('All');
+  const [reportSearchTerm, setReportSearchTerm] = useState('');
+
+  // Category Combobox state
+  const [isCatDropdownOpen, setIsCatDropdownOpen] = useState(false);
+  const [catSearchQuery, setCatSearchQuery] = useState('All Categories');
+  const [isCatTyping, setIsCatTyping] = useState(false);
+  const catDropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (!isCatTyping) {
+      setCatSearchQuery(selectedCategoryFilter === 'All' ? 'All Categories' : selectedCategoryFilter);
+    }
+  }, [selectedCategoryFilter, isCatTyping]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (catDropdownRef.current && !catDropdownRef.current.contains(event.target)) {
+        setIsCatDropdownOpen(false);
+        setIsCatTyping(false);
+        setCatSearchQuery(selectedCategoryFilter === 'All' ? 'All Categories' : selectedCategoryFilter);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectedCategoryFilter]);
+
+  // Employee Combobox state
+  const [isEmpDropdownOpen, setIsEmpDropdownOpen] = useState(false);
+  const [empSearchQuery, setEmpSearchQuery] = useState('All Assigned Employees');
+  const [isEmpTyping, setIsEmpTyping] = useState(false);
+  const empDropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (!isEmpTyping) {
+      if (selectedEmpFilter === 'All') {
+        setEmpSearchQuery('All Assigned Employees');
+      } else {
+        const emp = (employees || []).find(e => e.id === selectedEmpFilter);
+        setEmpSearchQuery(emp ? `${emp.id} - ${emp.name}` : selectedEmpFilter);
+      }
+    }
+  }, [selectedEmpFilter, isEmpTyping, employees]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (empDropdownRef.current && !empDropdownRef.current.contains(event.target)) {
+        setIsEmpDropdownOpen(false);
+        setIsEmpTyping(false);
+        if (selectedEmpFilter === 'All') {
+          setEmpSearchQuery('All Assigned Employees');
+        } else {
+          const emp = (employees || []).find(e => e.id === selectedEmpFilter);
+          setEmpSearchQuery(emp ? `${emp.id} - ${emp.name}` : selectedEmpFilter);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectedEmpFilter, employees]);
+
+  // Department Combobox state
+  const [isDeptDropdownOpen, setIsDeptDropdownOpen] = useState(false);
+  const [deptSearchQuery, setDeptSearchQuery] = useState('All Departments');
+  const [isDeptTyping, setIsDeptTyping] = useState(false);
+  const deptDropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (!isDeptTyping) {
+      setDeptSearchQuery(selectedDeptFilter === 'All' ? 'All Departments' : selectedDeptFilter);
+    }
+  }, [selectedDeptFilter, isDeptTyping]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (deptDropdownRef.current && !deptDropdownRef.current.contains(event.target)) {
+        setIsDeptDropdownOpen(false);
+        setIsDeptTyping(false);
+        setDeptSearchQuery(selectedDeptFilter === 'All' ? 'All Departments' : selectedDeptFilter);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectedDeptFilter]);
+
+  // Ownership Combobox state
+  const [isOwnershipDropdownOpen, setIsOwnershipDropdownOpen] = useState(false);
+  const [ownershipSearchQuery, setOwnershipSearchQuery] = useState('All Ownership Entities');
+  const [isOwnershipTyping, setIsOwnershipTyping] = useState(false);
+  const ownershipDropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOwnershipTyping) {
+      setOwnershipSearchQuery(selectedOwnershipFilter === 'All' ? 'All Ownership Entities' : selectedOwnershipFilter);
+    }
+  }, [selectedOwnershipFilter, isOwnershipTyping]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (ownershipDropdownRef.current && !ownershipDropdownRef.current.contains(event.target)) {
+        setIsOwnershipDropdownOpen(false);
+        setIsOwnershipTyping(false);
+        setOwnershipSearchQuery(selectedOwnershipFilter === 'All' ? 'All Ownership Entities' : selectedOwnershipFilter);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectedOwnershipFilter]);
+
+  const categoryNamesFromState = (categories || []).map(c => c.name);
+  const categoryNamesFromAssets = (assets || []).map(a => a.type);
+  const availableCategories = ['All', ...new Set([...categoryNamesFromState, ...categoryNamesFromAssets])].filter(Boolean);
+  const availableDepartments = ['All', ...new Set((employees || []).map(e => e.department))].filter(Boolean);
+
+  const filteredCategoriesList = availableCategories.filter(cat => {
+    if (!isCatTyping || !catSearchQuery.trim()) return true;
+    const q = catSearchQuery.toLowerCase().trim();
+    return (cat === 'All' ? 'All Categories' : cat).toLowerCase().includes(q);
+  });
+
+  const filteredDeptList = availableDepartments.filter(dept => {
+    if (!isDeptTyping || !deptSearchQuery.trim()) return true;
+    const q = deptSearchQuery.toLowerCase().trim();
+    return (dept === 'All' ? 'All Departments' : dept).toLowerCase().includes(q);
+  });
+
+  const ownershipOptions = ['All', 'Quadrant IT Services Asset', 'DSV Asset'];
+  const filteredOwnershipList = ownershipOptions.filter(ent => {
+    if (!isOwnershipTyping || !ownershipSearchQuery.trim()) return true;
+    const q = ownershipSearchQuery.toLowerCase().trim();
+    return (ent === 'All' ? 'All Ownership Entities' : ent).toLowerCase().includes(q);
+  });
+
+  const filteredEmpList = (employees || []).filter(emp => {
+    if (!isEmpTyping || !empSearchQuery.trim()) return true;
+    const q = empSearchQuery.toLowerCase().trim();
+    return `${emp.id} ${emp.name} ${emp.department} ${emp.email}`.toLowerCase().includes(q);
+  });
+
+  const getGeneratedReportData = () => {
+    let list = [...(assets || [])];
+
+    if (reportType === 'category') {
+      if (selectedCategoryFilter !== 'All') {
+        const catQuery = selectedCategoryFilter.toLowerCase().trim();
+        list = list.filter(a => {
+          const assetType = (a.type || '').toLowerCase().trim();
+          return assetType === catQuery || catQuery.includes(assetType) || assetType.includes(catQuery);
+        });
+      }
+    } else if (reportType === 'department') {
+      if (selectedDeptFilter !== 'All') {
+        const deptEmpIds = (employees || []).filter(e => e.department === selectedDeptFilter).map(e => e.id);
+        list = list.filter(a => deptEmpIds.includes(a.assignedTo));
+      }
+    } else if (reportType === 'employee') {
+      if (selectedEmpFilter !== 'All') {
+        list = list.filter(a => a.assignedTo === selectedEmpFilter);
+      } else {
+        list = list.filter(a => a.assignedTo !== null);
+      }
+    } else if (reportType === 'ownership') {
+      if (selectedOwnershipFilter !== 'All') {
+        list = list.filter(a => (a.ownerEntity || 'Quadrant IT Services Asset') === selectedOwnershipFilter);
+      }
+    } else if (reportType === 'repair') {
+      list = list.filter(a => a.status === 'Under Repair');
+    } else if (reportType === 'disposed') {
+      list = list.filter(a => a.status === 'Disposed' || a.status === 'Retired');
+    }
+
+    if (reportSearchTerm.trim()) {
+      const q = reportSearchTerm.toLowerCase().trim();
+      list = list.filter(a => {
+        const owner = (employees || []).find(e => e.id === a.assignedTo);
+        const searchStr = `${a.id} ${a.type} ${a.brand} ${a.model} ${a.serialNumber} ${a.status} ${owner ? owner.name : ''}`.toLowerCase();
+        return searchStr.includes(q);
+      });
+    }
+
+    return list;
+  };
+
+  const reportData = getGeneratedReportData();
+
+  const handleExportActiveReport = (format = 'CSV') => {
+    const data = reportData;
+    if (data.length === 0) {
+      showToast('No data available to export for this report view.', 'error');
+      return;
+    }
+
+    const headers = "Asset ID,Type,Brand,Model,Serial Number,Status,Assigned To,Department,Ownership Entity,Category Classification,Purchase Date,Warranty Expiration\n";
+    const rows = data.map(a => {
+      const owner = (employees || []).find(e => e.id === a.assignedTo);
+      return `"${a.id}","${a.type}","${a.brand}","${a.model}","${a.serialNumber}","${a.status}","${owner ? owner.name : '-'}","${owner ? owner.department : '-'}","${a.ownerEntity || 'Quadrant IT Services Asset'}","${a.categoryGroup || 'IT Asset'}","${a.purchaseDate || '-'}","${a.warrantyEndDate || '-'}"`;
+    }).join("\n");
+
+    const blob = new Blob([headers + rows], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `IT_Report_${reportType.toUpperCase()}_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast(`Successfully exported ${data.length} records (${reportType.toUpperCase()} Report) as ${format}!`);
+  };
+
   // Quick report types list
   const reportsList = [
-    { name: 'All Assets Report', desc: 'Detailed list of all assets', icon: Laptop },
-    { name: 'Employee-wise Assets', desc: 'Assets assigned to each employee', icon: CheckCircle },
-    { name: 'Department-wise Assets', desc: 'Assets grouped by department', icon: TrendingUp },
-    { name: 'Warranty Expiry Report', desc: 'Assets with warranty details', icon: FileText },
-    { name: 'Assets Under Repair', desc: 'List of assets under repair', icon: Wrench },
-    { name: 'Retired Assets Report', desc: 'List of retired/disposed assets', icon: Trash2 }
+    { typeId: 'master', name: 'All Assets Master Report', desc: 'Detailed list of all hardware assets', icon: Laptop },
+    { typeId: 'category', name: 'Category-wise Report', desc: 'Breakdown by individual asset categories', icon: Layers },
+    { typeId: 'department', name: 'Department-wise Report', desc: 'Assets grouped by department', icon: Building2 },
+    { typeId: 'employee', name: 'Employee-wise Assets', desc: 'Assets assigned to each employee', icon: User },
+    { typeId: 'ownership', name: 'Ownership Entity Report', desc: 'DSV Assets vs Quadrant IT Assets', icon: ShieldCheck },
+    { typeId: 'repair', name: 'Assets Under Repair', desc: 'List of assets under repair tickets', icon: Wrench },
+    { typeId: 'disposed', name: 'Retired / Disposed Assets', desc: 'List of retired hardware assets', icon: Trash2 }
   ];
 
   // Recent Assignments log
@@ -340,78 +561,31 @@ const Reports = () => {
         </div>
       </div>
 
-      {/* Bottom Section */}
+      {/* Bottom Section: Quick Reports (Left) & Custom Reports Hub (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left (Span 2): Recent Asset Assignments */}
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
-          <h3 className="text-sm font-bold text-slate-800">Recent Asset Assignments</h3>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  <th className="pb-3 pr-4">Asset ID</th>
-                  <th className="pb-3 px-4">Asset</th>
-                  <th className="pb-3 px-4">Assigned To</th>
-                  <th className="pb-3 px-4">Department</th>
-                  <th className="pb-3 px-4">Assigned Date</th>
-                  <th className="pb-3 px-4">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {recentAssignments.map((log, index) => {
-                  const empIdMatch = log.details.match(/EMP\d+/);
-                  const empId = empIdMatch ? empIdMatch[0] : '';
-                  const emp = employees.find(e => e.id === empId);
-
-                  return (
-                    <tr key={index} className="hover:bg-slate-50/50">
-                      <td className="py-3 pr-4 font-bold text-blue-600">LT0001</td>
-                      <td className="py-3 px-4 font-medium">Dell Latitude 5440</td>
-                      <td className="py-3 px-4 font-semibold text-slate-700">
-                        {emp ? (
-                          <div className="flex items-center gap-2">
-                            <Avatar name={emp.name} className="h-5 w-5 rounded-full animate-fade-in" textSize="text-[7px]" />
-                            <span>{emp.name}</span>
-                          </div>
-                        ) : (
-                          <span>Rakesh Reddy (EMP001)</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-slate-500">{emp ? emp.department : 'IT'}</td>
-                      <td className="py-3 px-4 text-slate-500">{formatDateWithYear(log.dateTime)}</td>
-                      <td className="py-3 px-4">
-                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-extrabold uppercase">
-                          Assigned
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="text-center pt-3 border-t border-slate-100">
-            <button className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-all">
-              View all assignments &rarr;
-            </button>
-          </div>
-        </div>
-
-        {/* Right (Span 1): Quick Reports List */}
+        {/* Left (Span 1): Quick Reports Navigation Card */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-4">
-          <h3 className="text-sm font-bold text-slate-800">Quick Reports</h3>
+          <div>
+            <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-blue-600" />
+              <span>Quick Reports</span>
+            </h3>
+            <p className="text-xs text-slate-400 font-semibold mt-0.5">Click any report to view & generate details on the right</p>
+          </div>
           
-          <div className="divide-y divide-slate-100 flex-1 flex flex-col justify-center">
+          <div className="divide-y divide-slate-100 flex-1 flex flex-col justify-center my-2">
             {reportsList.map((rep, idx) => (
               <div 
                 key={idx} 
-                className="py-3 flex items-center justify-between gap-3 hover:bg-slate-50/50 rounded-xl px-2 transition-all cursor-pointer group"
-                onClick={() => simulateExport(rep.name)}
+                className={`py-3 flex items-center justify-between gap-3 hover:bg-slate-50/80 rounded-xl px-2.5 transition-all cursor-pointer group ${
+                  reportType === rep.typeId ? 'bg-blue-50/80 font-bold border border-blue-100/80' : ''
+                }`}
+                onClick={() => setReportType(rep.typeId)}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="p-2 bg-slate-50 rounded-xl text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600 shrink-0 transition-all">
+                  <div className={`p-2 rounded-xl shrink-0 transition-all ${
+                    reportType === rep.typeId ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-50 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600'
+                  }`}>
                     <rep.icon className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
@@ -419,27 +593,411 @@ const Reports = () => {
                     <p className="text-[9px] text-slate-400 truncate mt-0.5">{rep.desc}</p>
                   </div>
                 </div>
-                <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-blue-500 shrink-0 transition-all" />
+                <ChevronRight className={`h-4 w-4 shrink-0 transition-all ${
+                  reportType === rep.typeId ? 'text-blue-600 translate-x-0.5' : 'text-slate-300 group-hover:text-blue-500'
+                }`} />
               </div>
             ))}
           </div>
+        </div>
 
-          {/* Export PDF/Excel buttons */}
-          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100">
-            <button 
-              onClick={() => simulateExport('PDF')}
-              className="flex items-center justify-center gap-1 py-2 px-3 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-[10px] transition-all"
+        {/* Right (Span 2): Active Report Detailed View & Table */}
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div>
+              <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+                <FileSpreadsheet className="h-5 w-5 text-blue-600" />
+                <span>
+                  {reportsList.find(r => r.typeId === reportType)?.name || 'Custom Report View'}
+                </span>
+              </h3>
+              <p className="text-xs text-slate-400 font-semibold mt-0.5">Filter and view detailed asset data for the selected report</p>
+            </div>
+            
+            <button
+              onClick={() => handleExportActiveReport('CSV')}
+              className="flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer shrink-0"
             >
-              <FileText className="h-4 w-4 text-red-500" />
-              <span>Export PDF</span>
+              <Download className="h-4 w-4" />
+              <span>Export Report ({reportData.length})</span>
             </button>
-            <button 
-              onClick={() => simulateExport('Excel')}
-              className="flex items-center justify-center gap-1 py-2 px-3 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-[10px] transition-all"
-            >
-              <FileSpreadsheet className="h-4 w-4 text-green-500" />
-              <span>Export Excel</span>
-            </button>
+          </div>
+
+
+
+          {/* Sub-Filters Bar */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 bg-slate-50/50 p-3 rounded-2xl border border-slate-100 text-xs">
+            {/* Category Filter Combobox (Dropdown + Type Filter) */}
+            {reportType === 'category' && (
+              <div className="relative w-full sm:w-auto" ref={catDropdownRef}>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-500 whitespace-nowrap">Category:</span>
+                  <div 
+                    onClick={() => setIsCatDropdownOpen(prev => !prev)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all cursor-pointer min-w-[170px]"
+                  >
+                    <input
+                      type="text"
+                      value={catSearchQuery}
+                      onFocus={() => setIsCatDropdownOpen(true)}
+                      onChange={(e) => {
+                        setCatSearchQuery(e.target.value);
+                        setIsCatTyping(true);
+                        setIsCatDropdownOpen(true);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsCatDropdownOpen(true);
+                      }}
+                      placeholder="Type category..."
+                      className="w-full bg-transparent focus:outline-none font-bold text-slate-700 text-xs placeholder:text-slate-400 cursor-pointer focus:cursor-text"
+                    />
+                    <ChevronDown className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${isCatDropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                {isCatDropdownOpen && (
+                  <div className="absolute top-full left-[70px] mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl py-1.5 z-50 min-w-[180px] max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2">
+                    {filteredCategoriesList.length === 0 ? (
+                      <div className="p-2.5 text-center text-xs text-slate-400 font-medium">
+                        No matching category
+                      </div>
+                    ) : (
+                      filteredCategoriesList.map(cat => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCategoryFilter(cat);
+                            setCatSearchQuery(cat === 'All' ? 'All Categories' : cat);
+                            setIsCatTyping(false);
+                            setIsCatDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                            selectedCategoryFilter === cat 
+                              ? 'bg-blue-50 text-blue-600 font-bold' 
+                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          <span>{cat === 'All' ? 'All Categories' : cat}</span>
+                          {selectedCategoryFilter === cat && <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Department Filter Combobox (Dropdown + Type Filter) */}
+            {reportType === 'department' && (
+              <div className="relative w-full sm:w-auto" ref={deptDropdownRef}>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-500 whitespace-nowrap">Department:</span>
+                  <div 
+                    onClick={() => setIsDeptDropdownOpen(prev => !prev)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all cursor-pointer min-w-[180px]"
+                  >
+                    <input
+                      type="text"
+                      value={deptSearchQuery}
+                      onFocus={(e) => {
+                        e.target.select();
+                        setIsDeptDropdownOpen(true);
+                      }}
+                      onChange={(e) => {
+                        setDeptSearchQuery(e.target.value);
+                        setIsDeptTyping(true);
+                        setIsDeptDropdownOpen(true);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsDeptDropdownOpen(true);
+                      }}
+                      placeholder="Type department..."
+                      className="w-full bg-transparent focus:outline-none font-bold text-slate-700 text-xs placeholder:text-slate-400 cursor-pointer focus:cursor-text"
+                    />
+                    <ChevronDown className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${isDeptDropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                {isDeptDropdownOpen && (
+                  <div className="absolute top-full left-[85px] mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl py-1.5 z-50 min-w-[190px] max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2">
+                    {filteredDeptList.length === 0 ? (
+                      <div className="p-2.5 text-center text-xs text-slate-400 font-medium">
+                        No matching department
+                      </div>
+                    ) : (
+                      filteredDeptList.map(dept => (
+                        <button
+                          key={dept}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDeptFilter(dept);
+                            setDeptSearchQuery(dept === 'All' ? 'All Departments' : dept);
+                            setIsDeptTyping(false);
+                            setIsDeptDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                            selectedDeptFilter === dept 
+                              ? 'bg-blue-50 text-blue-600 font-bold' 
+                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          <span>{dept === 'All' ? 'All Departments' : dept}</span>
+                          {selectedDeptFilter === dept && <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Employee Filter Combobox (Dropdown + Type Filter) */}
+            {reportType === 'employee' && (
+              <div className="relative w-full sm:w-auto" ref={empDropdownRef}>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-500 whitespace-nowrap">Employee:</span>
+                  <div 
+                    onClick={() => setIsEmpDropdownOpen(prev => !prev)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all cursor-pointer min-w-[210px]"
+                  >
+                    <input
+                      type="text"
+                      value={empSearchQuery}
+                      onFocus={(e) => {
+                        e.target.select();
+                        setIsEmpDropdownOpen(true);
+                      }}
+                      onChange={(e) => {
+                        setEmpSearchQuery(e.target.value);
+                        setIsEmpTyping(true);
+                        setIsEmpDropdownOpen(true);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEmpDropdownOpen(true);
+                      }}
+                      placeholder="Type name or ID..."
+                      className="w-full bg-transparent focus:outline-none font-bold text-slate-700 text-xs placeholder:text-slate-400 cursor-pointer focus:cursor-text"
+                    />
+                    <ChevronDown className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${isEmpDropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                {isEmpDropdownOpen && (
+                  <div className="absolute top-full left-[75px] mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl py-1.5 z-50 min-w-[240px] max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedEmpFilter('All');
+                        setEmpSearchQuery('All Assigned Employees');
+                        setIsEmpTyping(false);
+                        setIsEmpDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer border-b border-slate-100 ${
+                        selectedEmpFilter === 'All' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span>All Assigned Employees</span>
+                      {selectedEmpFilter === 'All' && <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
+                    </button>
+
+                    {filteredEmpList.length === 0 ? (
+                      <div className="p-2.5 text-center text-xs text-slate-400 font-medium">
+                        No matching employee
+                      </div>
+                    ) : (
+                      filteredEmpList.map(emp => (
+                        <button
+                          key={emp.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedEmpFilter(emp.id);
+                            setEmpSearchQuery(`${emp.id} - ${emp.name}`);
+                            setIsEmpTyping(false);
+                            setIsEmpDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                            selectedEmpFilter === emp.id 
+                              ? 'bg-blue-50 text-blue-600 font-bold' 
+                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Avatar name={emp.name} className="h-5 w-5 rounded-full" textSize="text-[7px]" />
+                            <div className="truncate">
+                              <span className="font-extrabold text-blue-600 mr-1">{emp.id}</span>
+                              <span>{emp.name}</span>
+                              <span className="text-[9px] text-slate-400 ml-1">({emp.department})</span>
+                            </div>
+                          </div>
+                          {selectedEmpFilter === emp.id && <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Ownership Filter Combobox (Dropdown + Type Filter) */}
+            {reportType === 'ownership' && (
+              <div className="relative w-full sm:w-auto" ref={ownershipDropdownRef}>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-500 whitespace-nowrap">Entity:</span>
+                  <div 
+                    onClick={() => setIsOwnershipDropdownOpen(prev => !prev)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all cursor-pointer min-w-[210px]"
+                  >
+                    <input
+                      type="text"
+                      value={ownershipSearchQuery}
+                      onFocus={(e) => {
+                        e.target.select();
+                        setIsOwnershipDropdownOpen(true);
+                      }}
+                      onChange={(e) => {
+                        setOwnershipSearchQuery(e.target.value);
+                        setIsOwnershipTyping(true);
+                        setIsOwnershipDropdownOpen(true);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsOwnershipDropdownOpen(true);
+                      }}
+                      placeholder="Type ownership..."
+                      className="w-full bg-transparent focus:outline-none font-bold text-slate-700 text-xs placeholder:text-slate-400 cursor-pointer focus:cursor-text"
+                    />
+                    <ChevronDown className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${isOwnershipDropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                {isOwnershipDropdownOpen && (
+                  <div className="absolute top-full left-[55px] mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl py-1.5 z-50 min-w-[220px] max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2">
+                    {filteredOwnershipList.length === 0 ? (
+                      <div className="p-2.5 text-center text-xs text-slate-400 font-medium">
+                        No matching entity
+                      </div>
+                    ) : (
+                      filteredOwnershipList.map(ent => (
+                        <button
+                          key={ent}
+                          type="button"
+                          onClick={() => {
+                            setSelectedOwnershipFilter(ent);
+                            setOwnershipSearchQuery(ent === 'All' ? 'All Ownership Entities' : ent);
+                            setIsOwnershipTyping(false);
+                            setIsOwnershipDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                            selectedOwnershipFilter === ent 
+                              ? 'bg-blue-50 text-blue-600 font-bold' 
+                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          <span>{ent === 'All' ? 'All Ownership Entities' : ent}</span>
+                          {selectedOwnershipFilter === ent && <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Search Input for Report Table */}
+            <div className="relative flex-1 w-full">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <Search className="h-3.5 w-3.5" />
+              </span>
+              <input
+                type="text"
+                value={reportSearchTerm}
+                onChange={e => setReportSearchTerm(e.target.value)}
+                placeholder="Search within report..."
+                className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              />
+            </div>
+          </div>
+
+          {/* Report Summary Badges Bar */}
+          <div className="flex items-center justify-between text-xs font-bold text-slate-500 bg-blue-50/50 p-3 rounded-2xl border border-blue-100/80">
+            <span>Showing <strong className="text-blue-600">{reportData.length}</strong> matching assets</span>
+            <div className="flex items-center gap-3 text-[11px]">
+              <span className="text-emerald-600 font-extrabold">{reportData.filter(a => a.status === 'Assigned').length} Assigned</span>
+              <span className="text-blue-600 font-extrabold">{reportData.filter(a => a.status === 'Available').length} Available</span>
+              <span className="text-amber-600 font-extrabold">{reportData.filter(a => a.status === 'Under Repair').length} Repair</span>
+            </div>
+          </div>
+
+          {/* Filtered Report Table */}
+          <div className="max-h-[350px] overflow-y-auto rounded-xl border border-slate-200/80 shadow-xs">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="sticky top-0 bg-slate-50 z-20 border-b border-slate-200 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                <tr>
+                  <th className="py-2.5 px-3">Asset ID</th>
+                  <th className="py-2.5 px-3">Asset Type & Model</th>
+                  <th className="py-2.5 px-3">Serial Number</th>
+                  <th className="py-2.5 px-3">Assigned To</th>
+                  <th className="py-2.5 px-3">Ownership</th>
+                  <th className="py-2.5 px-3 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
+                {reportData.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-10 text-center text-slate-400 font-semibold">
+                      No matching records found for this report configuration.
+                    </td>
+                  </tr>
+                ) : (
+                  reportData.map((asset) => {
+                    const owner = (employees || []).find(e => e.id === asset.assignedTo);
+
+                    return (
+                      <tr key={asset.id} className="hover:bg-slate-50/80 font-medium">
+                        <td className="py-2.5 px-3 font-extrabold text-blue-600">{asset.id}</td>
+                        <td className="py-2.5 px-3 font-bold text-slate-800">
+                          <div>
+                            <p className="text-xs font-bold text-slate-800">{asset.brand} {asset.model}</p>
+                            <p className="text-[10px] text-slate-400 font-medium">{asset.type}</p>
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 font-mono text-slate-600 text-[11px]">{asset.serialNumber}</td>
+                        <td className="py-2.5 px-3">
+                          {owner ? (
+                            <div className="flex items-center gap-1.5">
+                              <Avatar name={owner.name} className="h-5 w-5 rounded-full" textSize="text-[7px]" />
+                              <div>
+                                <p className="font-bold text-slate-800 leading-tight">{owner.name}</p>
+                                <p className="text-[9px] text-slate-400">{owner.department}</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 font-semibold">-</span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3 font-semibold text-slate-600 text-[10px]">
+                          {asset.ownerEntity || 'Quadrant IT Services Asset'}
+                        </td>
+                        <td className="py-2.5 px-3 text-center">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold whitespace-nowrap ${
+                            asset.status === 'Assigned' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                            asset.status === 'Available' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
+                            asset.status === 'Under Repair' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
+                            {asset.status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

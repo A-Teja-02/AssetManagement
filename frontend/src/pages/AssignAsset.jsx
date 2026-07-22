@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, 
   Filter, 
@@ -20,7 +20,9 @@ import {
   Printer,
   Cpu,
   Link2,
-  ArrowLeft
+  ArrowLeft,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 import { useAssetManager } from '../hooks/useAssetManager';
 import Avatar from '../components/Avatar';
@@ -36,10 +38,52 @@ const AssignAsset = () => {
   } = useAssetManager();
 
   // Selected state
-  const [selectedEmpId, setSelectedEmpId] = useState(employees[0]?.id || '');
+  const [selectedEmpId, setSelectedEmpId] = useState('');
   const [selectedAssetIds, setSelectedAssetIds] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   
+  useEffect(() => {
+    if (!selectedEmpId && (employees || []).length > 0) {
+      setSelectedEmpId(employees[0].id);
+    }
+  }, [employees, selectedEmpId]);
+  
+  // Employee Combobox Dropdown state
+  const [isEmpDropdownOpen, setIsEmpDropdownOpen] = useState(false);
+  const [empSearchQuery, setEmpSearchQuery] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const empDropdownRef = useRef(null);
+
+  // Sync displayed search text when selectedEmpId changes or dropdown closes
+  useEffect(() => {
+    const initialEmp = (employees || []).find(e => e.id === selectedEmpId);
+    if (initialEmp && !isTyping) {
+      setEmpSearchQuery(`${initialEmp.id} - ${initialEmp.name}`);
+    }
+  }, [selectedEmpId, isTyping, employees]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (empDropdownRef.current && !empDropdownRef.current.contains(event.target)) {
+        setIsEmpDropdownOpen(false);
+        setIsTyping(false);
+        const cur = (employees || []).find(e => e.id === selectedEmpId);
+        if (cur) setEmpSearchQuery(`${cur.id} - ${cur.name}`);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectedEmpId, employees]);
+
+  const activeEmployees = (employees || []).filter(e => e.status === 'Active');
+
+  const filteredEmployees = activeEmployees.filter(emp => {
+    if (!isTyping || !empSearchQuery.trim()) return true;
+    const q = empSearchQuery.toLowerCase().trim();
+    const fullText = `${emp.id} ${emp.name} ${emp.department} ${emp.email}`.toLowerCase();
+    return fullText.includes(q);
+  });
+
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('search'); // search | qr
@@ -49,10 +93,10 @@ const AssignAsset = () => {
   const [remarks, setRemarks] = useState('');
 
   // 1. Get selected employee details
-  const currentEmp = employees.find(e => e.id === selectedEmpId);
+  const currentEmp = (employees || []).find(e => e.id === selectedEmpId);
 
   // 2. Filter available assets for selection list
-  const availableAssets = assets.filter(asset => {
+  const availableAssets = (assets || []).filter(asset => {
     const isAvailable = asset.status === 'Available';
     const isNotBasket = !selectedAssetIds.includes(asset.id);
     const searchString = `${asset.id} ${asset.type} ${asset.brand} ${asset.model} ${asset.serialNumber}`.toLowerCase();
@@ -61,7 +105,7 @@ const AssignAsset = () => {
   });
 
   // 3. Get basket assets
-  const basketAssets = assets.filter(asset => selectedAssetIds.includes(asset.id));
+  const basketAssets = (assets || []).filter(asset => selectedAssetIds.includes(asset.id));
 
   // 4. Toggle asset selection
   const handleAddAsset = (id) => {
@@ -87,7 +131,7 @@ const AssignAsset = () => {
     assignAssets(selectedEmpId, selectedAssetIds, assignDate, remarks);
     
     // Success feedback and Reset
-    showToast(`Successfully assigned ${selectedAssetIds.length} assets to ${currentEmp.name}!`);
+    showToast(`Successfully assigned ${selectedAssetIds.length} assets to ${currentEmp?.name || 'Employee'}!`);
     setSelectedAssetIds([]);
     setRemarks('');
     setSelectedCategory(null);
@@ -137,15 +181,75 @@ const AssignAsset = () => {
             
             <div className="space-y-3">
               <label className="block text-xs font-bold text-slate-500">Select Employee *</label>
-              <select
-                value={selectedEmpId}
-                onChange={e => setSelectedEmpId(e.target.value)}
-                className="w-full p-3 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none font-semibold text-slate-700 bg-slate-50/50"
-              >
-                {employees.filter(e => e.status === 'Active').map(emp => (
-                  <option key={emp.id} value={emp.id}>{emp.id} - {emp.name}</option>
-                ))}
-              </select>
+              
+              {/* Searchable Combobox Dropdown */}
+              <div className="relative" ref={empDropdownRef}>
+                <div 
+                  onClick={() => setIsEmpDropdownOpen(prev => !prev)}
+                  className="w-full p-2.5 border border-slate-200/90 rounded-xl text-xs bg-slate-50/80 hover:bg-white focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all cursor-pointer flex items-center justify-between gap-2 shadow-2xs"
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <input
+                      type="text"
+                      value={empSearchQuery}
+                      onFocus={() => {
+                        setIsEmpDropdownOpen(true);
+                      }}
+                      onChange={(e) => {
+                        setEmpSearchQuery(e.target.value);
+                        setIsTyping(true);
+                        setIsEmpDropdownOpen(true);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEmpDropdownOpen(true);
+                      }}
+                      placeholder="Type name or ID to filter..."
+                      className="w-full bg-transparent focus:outline-none font-semibold text-slate-700 text-xs placeholder:text-slate-400 placeholder:font-normal cursor-pointer focus:cursor-text"
+                    />
+                  </div>
+                  <ChevronDown className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${isEmpDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+
+                {isEmpDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200/90 rounded-2xl shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-2 max-h-60 overflow-y-auto">
+                    {filteredEmployees.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-slate-400 font-medium">
+                        No employee matching "{empSearchQuery}"
+                      </div>
+                    ) : (
+                      filteredEmployees.map(emp => (
+                        <button
+                          key={emp.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedEmpId(emp.id);
+                            setEmpSearchQuery(`${emp.id} - ${emp.name}`);
+                            setIsTyping(false);
+                            setIsEmpDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3.5 py-2.5 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                            selectedEmpId === emp.id 
+                              ? 'bg-blue-50 text-blue-600 font-bold' 
+                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <Avatar name={emp.name} className="h-6 w-6 rounded-full" textSize="text-[8px]" />
+                            <div className="truncate">
+                              <span className="font-extrabold text-blue-600 mr-1.5">{emp.id}</span>
+                              <span>{emp.name}</span>
+                              <span className="text-[10px] text-slate-400 ml-2">({emp.department})</span>
+                            </div>
+                          </div>
+                          {selectedEmpId === emp.id && <Check className="h-4 w-4 text-blue-600 shrink-0" />}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Employee Info Box (Blue) */}

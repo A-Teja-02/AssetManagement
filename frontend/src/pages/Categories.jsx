@@ -67,8 +67,13 @@ const Categories = () => {
     showToast 
   } = useAssetManager();
 
-  // Tab filter: 'All' | 'IT' | 'Employee' | 'Organization' | 'Non-IT'
-  const [selectedTab, setSelectedTab] = useState('All');
+  // Primary Tier Entity Filter: 'Quadrant IT Services Asset' | 'DSV Asset'
+  const [selectedEntity, setSelectedEntity] = useState('Quadrant IT Services Asset');
+
+  // Secondary Tier Hierarchy Filter:
+  // For Quadrant: 'All' | 'Employee IT' | 'Organization IT' | 'Non-IT'
+  // For DSV: 'All' | 'IT' | 'Non-IT'
+  const [selectedSubTab, setSelectedSubTab] = useState('All');
 
   // Search filter
   const [searchTerm, setSearchTerm] = useState('');
@@ -91,17 +96,48 @@ const Categories = () => {
   // Safe categories list
   const safeCategories = categories || [];
 
-  // Filtered categories by search, group tab, and scope
+  // Quadrant Categories
+  const quadrantCats = safeCategories.filter(c => (c.ownerEntity || (c.name.toLowerCase().startsWith('dsv') ? 'DSV Asset' : 'Quadrant IT Services Asset')) === 'Quadrant IT Services Asset');
+  const quadrantEmployeeIt = quadrantCats.filter(c => (c.group || 'IT') === 'IT' && (c.scope || 'Employee') === 'Employee');
+  const quadrantOrgIt = quadrantCats.filter(c => (c.group || 'IT') === 'IT' && c.scope === 'Organization');
+  const quadrantNonIt = quadrantCats.filter(c => c.group === 'Non-IT');
+
+  // DSV Categories
+  const dsvCats = safeCategories.filter(c => (c.ownerEntity || (c.name.toLowerCase().startsWith('dsv') ? 'DSV Asset' : 'Quadrant IT Services Asset')) === 'DSV Asset');
+  const dsvIt = dsvCats.filter(c => (c.group || 'IT') === 'IT');
+  const dsvNonIt = dsvCats.filter(c => c.group === 'Non-IT');
+
+  const handleEntityChange = (entity) => {
+    setSelectedEntity(entity);
+    setSelectedSubTab('All');
+  };
+
+  // Filtered categories by search and hierarchy tabs
   const filteredCategories = safeCategories.filter(cat => {
-    let matchesTab = true;
-    if (selectedTab === 'IT') matchesTab = (cat.group || 'IT') === 'IT';
-    else if (selectedTab === 'Employee') matchesTab = (cat.group || 'IT') === 'IT' && (cat.scope || 'Employee') === 'Employee';
-    else if (selectedTab === 'Organization') matchesTab = (cat.group || 'IT') === 'IT' && cat.scope === 'Organization';
-    else if (selectedTab === 'Non-IT') matchesTab = cat.group === 'Non-IT';
+    const catEntity = cat.ownerEntity || (cat.name.toLowerCase().startsWith('dsv') ? 'DSV Asset' : 'Quadrant IT Services Asset');
+    if (catEntity !== selectedEntity) return false;
+
+    let matchesSubTab = true;
+    if (selectedEntity === 'Quadrant IT Services Asset') {
+      if (selectedSubTab === 'Employee IT') {
+        matchesSubTab = (cat.group || 'IT') === 'IT' && (cat.scope || 'Employee') === 'Employee';
+      } else if (selectedSubTab === 'Organization IT') {
+        matchesSubTab = (cat.group || 'IT') === 'IT' && cat.scope === 'Organization';
+      } else if (selectedSubTab === 'Non-IT') {
+        matchesSubTab = cat.group === 'Non-IT';
+      }
+    } else if (selectedEntity === 'DSV Asset') {
+      if (selectedSubTab === 'IT') {
+        matchesSubTab = (cat.group || 'IT') === 'IT';
+      } else if (selectedSubTab === 'Non-IT') {
+        matchesSubTab = cat.group === 'Non-IT';
+      }
+    }
 
     const matchesSearch = cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (cat.description && cat.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesTab && matchesSearch;
+
+    return matchesSubTab && matchesSearch;
   });
 
   // Helper to count assets per category name
@@ -123,21 +159,13 @@ const Categories = () => {
     };
   };
 
-  // KPI calculations
-  const totalCategories = safeCategories.length;
-  const itCategoriesCount = safeCategories.filter(c => (c.group || 'IT') === 'IT').length;
-  const employeeItCount = safeCategories.filter(c => (c.group || 'IT') === 'IT' && (c.scope || 'Employee') === 'Employee').length;
-  const orgItCount = safeCategories.filter(c => (c.group || 'IT') === 'IT' && c.scope === 'Organization').length;
-  const nonItCategoriesCount = safeCategories.filter(c => c.group === 'Non-IT').length;
-  const totalCategorizedAssets = (assets || []).length;
-
   // Handlers
   const handleOpenAddModal = () => {
     setFormName('');
     setFormDescription('');
-    setFormIcon(selectedTab === 'Non-IT' ? 'Briefcase' : 'Laptop');
-    setFormGroup(selectedTab === 'Non-IT' ? 'Non-IT' : 'IT');
-    setFormScope(selectedTab === 'Organization' ? 'Organization' : 'Employee');
+    setFormIcon(selectedSubTab === 'Non-IT' ? 'Briefcase' : 'Laptop');
+    setFormGroup(selectedSubTab === 'Non-IT' ? 'Non-IT' : 'IT');
+    setFormScope(selectedSubTab === 'Organization IT' ? 'Organization' : 'Employee');
     setIsAddModalOpen(true);
   };
 
@@ -152,10 +180,11 @@ const Categories = () => {
       description: formDescription.trim() || `${formGroup} asset category`,
       iconName: formIcon,
       group: formGroup,
-      scope: formGroup === 'IT' ? formScope : 'Organization'
+      scope: formGroup === 'IT' ? formScope : 'Organization',
+      ownerEntity: selectedEntity
     });
     setIsAddModalOpen(false);
-    showToast(`Successfully added category "${formName.trim()}" to ${formGroup} Assets!`);
+    showToast(`Successfully added category "${formName.trim()}" to ${selectedEntity}!`);
   };
 
   const handleOpenEditModal = (cat) => {
@@ -178,7 +207,8 @@ const Categories = () => {
       description: formDescription.trim(),
       iconName: formIcon,
       group: formGroup,
-      scope: formGroup === 'IT' ? formScope : 'Organization'
+      scope: formGroup === 'IT' ? formScope : 'Organization',
+      ownerEntity: selectedEntity
     });
     setEditingCategory(null);
     showToast(`Successfully updated category "${formName.trim()}"!`);
@@ -201,139 +231,178 @@ const Categories = () => {
         <span className="text-slate-600 font-bold">Categories</span>
       </div>
 
-      {/* KPI Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <MetricCard
-          title="Total Categories"
-          value={totalCategories}
-          subtext={`${itCategoriesCount} IT / ${nonItCategoriesCount} Non-IT`}
-          color="blue"
-          icon={Layers}
-        />
-        <MetricCard
-          title="IT Category Types"
-          value={itCategoriesCount}
-          subtext="Hardware & Devices"
-          color="green"
-          icon={Laptop}
-        />
-        <MetricCard
-          title="Non-IT Category Types"
-          value={nonItCategoriesCount}
-          subtext="Furniture & Fixtures"
-          color="orange"
-          icon={Briefcase}
-        />
-        <MetricCard
-          title="Total Hardware Items"
-          value={totalCategorizedAssets}
-          subtext="Tracked Inventory"
-          color="purple"
-          icon={Package}
-        />
-      </div>
-
-      {/* Control Bar: IT / Non-IT Tabs, Search & Add Button */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        {/* IT vs Non-IT Toggle Tabs & Sub-Category Filters */}
-        <div className="flex items-center gap-1.5 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/80 w-fit shrink-0 flex-wrap">
+      {/* Category Hierarchy Header */}
+      <div className="space-y-4">
+        {/* Tier 1: Primary Entity Tabs */}
+        <div className="flex items-center gap-3 border-b border-slate-200 pb-3 overflow-x-auto">
           <button
             type="button"
-            onClick={() => setSelectedTab('All')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-              selectedTab === 'All'
-                ? 'bg-white text-slate-800 shadow-sm border border-slate-200/60'
-                : 'text-slate-500 hover:text-slate-800'
+            onClick={() => handleEntityChange('Quadrant IT Services Asset')}
+            className={`flex items-center gap-2.5 px-5 py-3 rounded-2xl text-xs font-extrabold transition-all cursor-pointer ${
+              selectedEntity === 'Quadrant IT Services Asset'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 scale-[1.02]'
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
             }`}
           >
-            All ({totalCategories})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedTab('IT')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-              selectedTab === 'IT'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Laptop className="h-3.5 w-3.5" />
-            <span>All IT</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${selectedTab === 'IT' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
-              {itCategoriesCount}
+            <Building className="h-4 w-4 shrink-0" />
+            <span>Quadrant IT Services Assets</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full ${selectedEntity === 'Quadrant IT Services Asset' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              {quadrantCats.length}
             </span>
           </button>
 
           <button
             type="button"
-            onClick={() => setSelectedTab('Employee')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-              selectedTab === 'Employee'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
-                : 'text-slate-500 hover:text-slate-800'
+            onClick={() => handleEntityChange('DSV Asset')}
+            className={`flex items-center gap-2.5 px-5 py-3 rounded-2xl text-xs font-extrabold transition-all cursor-pointer ${
+              selectedEntity === 'DSV Asset'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 scale-[1.02]'
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
             }`}
           >
-            <User className="h-3.5 w-3.5" />
-            <span>Employee IT Assets</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${selectedTab === 'Employee' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
-              {employeeItCount}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedTab('Organization')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-              selectedTab === 'Organization'
-                ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Building className="h-3.5 w-3.5" />
-            <span>Org IT Assets</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${selectedTab === 'Organization' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
-              {orgItCount}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedTab('Non-IT')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-              selectedTab === 'Non-IT'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Briefcase className="h-3.5 w-3.5" />
-            <span>Non-IT Assets</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${selectedTab === 'Non-IT' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
-              {nonItCategoriesCount}
+            <Briefcase className="h-4 w-4 shrink-0" />
+            <span>DSV Assets</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full ${selectedEntity === 'DSV Asset' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              {dsvCats.length}
             </span>
           </button>
         </div>
 
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search category name or description..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium transition-all"
-          />
-        </div>
+        {/* Tier 2 & Tier 3 Sub-Hierarchy Tabs Bar */}
+        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-2 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/80 w-fit shrink-0 flex-wrap">
+            {selectedEntity === 'Quadrant IT Services Asset' ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSubTab('All')}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                    selectedSubTab === 'All'
+                      ? 'bg-white text-slate-800 shadow-sm border border-slate-200/60'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  All Quadrant ({quadrantCats.length})
+                </button>
 
-        {/* Action Button */}
-        <button
-          onClick={handleOpenAddModal}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-500/20 transition-all cursor-pointer shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Add New Category</span>
-        </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSubTab('Employee IT')}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                    selectedSubTab === 'Employee IT'
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <User className="h-3.5 w-3.5" />
+                  <span>Employee IT Assets</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${selectedSubTab === 'Employee IT' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                    {quadrantEmployeeIt.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedSubTab('Organization IT')}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                    selectedSubTab === 'Organization IT'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <Building className="h-3.5 w-3.5" />
+                  <span>Org IT Assets</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${selectedSubTab === 'Organization IT' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                    {quadrantOrgIt.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedSubTab('Non-IT')}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                    selectedSubTab === 'Non-IT'
+                      ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <Briefcase className="h-3.5 w-3.5" />
+                  <span>Non-IT Assets</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${selectedSubTab === 'Non-IT' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                    {quadrantNonIt.length}
+                  </span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSubTab('All')}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                    selectedSubTab === 'All'
+                      ? 'bg-white text-slate-800 shadow-sm border border-slate-200/60'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  All DSV ({dsvCats.length})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedSubTab('IT')}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                    selectedSubTab === 'IT'
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <Laptop className="h-3.5 w-3.5" />
+                  <span>IT Assets</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${selectedSubTab === 'IT' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                    {dsvIt.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedSubTab('Non-IT')}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                    selectedSubTab === 'Non-IT'
+                      ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <Briefcase className="h-3.5 w-3.5" />
+                  <span>Non-IT Assets</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${selectedSubTab === 'Non-IT' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                    {dsvNonIt.length}
+                  </span>
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 lg:w-64">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search category name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium transition-all"
+              />
+            </div>
+
+            <button
+              onClick={handleOpenAddModal}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-500/20 transition-all cursor-pointer shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add New Category</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Category Cards Grid */}

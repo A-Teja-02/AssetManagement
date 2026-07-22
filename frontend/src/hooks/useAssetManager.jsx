@@ -136,20 +136,26 @@ export const AssetProvider = ({ children }) => {
       localStorage.setItem('it_employees', JSON.stringify(generatedEmployees));
       storedEmployees = JSON.stringify(generatedEmployees);
     }
-    let parsedEmployees = JSON.parse(storedEmployees).map(emp => {
-      if (emp.id === 'EMP001') {
-        return {
-          ...emp,
-          name: 'Rakesh Reddy',
-          email: 'rakesh.reddy@company.com',
-          username: 'rakesh.reddy'
-        };
-      }
-      if (!emp.username) {
-        emp.username = emp.email ? emp.email.split('@')[0] : emp.name.toLowerCase().replace(/[^a-z]/g, '').replace(' ', '.');
-      }
-      return emp;
-    });
+    let parsedEmployees = JSON.parse(storedEmployees)
+      .filter(emp => {
+        if (!emp) return false;
+        const isJagadishTest = emp.name?.toLowerCase() === 'jagadish' || emp.id === 'QEMP128' || emp.email === 'rakesh@com';
+        return !isJagadishTest;
+      })
+      .map(emp => {
+        if (emp.id === 'EMP001') {
+          return {
+            ...emp,
+            name: 'Rakesh Reddy',
+            email: 'rakesh.reddy@company.com',
+            username: 'rakesh.reddy'
+          };
+        }
+        if (!emp.username) {
+          emp.username = emp.email ? emp.email.split('@')[0] : emp.name.toLowerCase().replace(/[^a-z]/g, '').replace(' ', '.');
+        }
+        return emp;
+      });
 
     if (!parsedEmployees.some(emp => emp.id === 'EMP1005')) {
       parsedEmployees.push({
@@ -535,17 +541,20 @@ export const AssetProvider = ({ children }) => {
     // 6. Initialize Categories
     let storedCategories = localStorage.getItem('it_categories');
     const initialCategories = [
-      { id: 'CAT001', name: 'Laptop', description: 'Portable computer devices assigned to individual employees for daily work', iconName: 'Laptop', group: 'IT', scope: 'Employee' },
-      { id: 'CAT002', name: 'Monitor', description: 'External high-res display screens for desktop setups and workstations', iconName: 'Monitor', group: 'IT', scope: 'Organization' },
-      { id: 'CAT003', name: 'Mouse', description: 'Wireless and optical ergonomic pointing devices for workers', iconName: 'Mouse', group: 'IT', scope: 'Employee' },
-      { id: 'CAT004', name: 'Keyboard', description: 'Mechanical and membrane keyboards assigned to employees', iconName: 'Keyboard', group: 'IT', scope: 'Employee' },
-      { id: 'CAT005', name: 'Headphones', description: 'Audio headsets and noise-cancelling headphones for workers', iconName: 'Headphones', group: 'IT', scope: 'Employee' },
-      { id: 'CAT006', name: 'Printer', description: 'Shared department laser printers and corporate office hardware', iconName: 'Printer', group: 'IT', scope: 'Organization' },
-      { id: 'CAT007', name: 'Cpu', description: 'Central processing units, servers, and corporate IT workstations', iconName: 'Cpu', group: 'IT', scope: 'Organization' },
-      { id: 'CAT008', name: 'Chairs', description: 'Ergonomic mesh office chairs and executive seating', iconName: 'Briefcase', group: 'Non-IT', scope: 'Organization' },
-      { id: 'CAT009', name: 'Tables', description: 'Modular office desks, conference and standing tables', iconName: 'Grid', group: 'Non-IT', scope: 'Organization' },
-      { id: 'CAT010', name: 'Whiteboards', description: 'Magnetic dry-erase boards and presentation panels', iconName: 'Grid', group: 'Non-IT', scope: 'Organization' },
-      { id: 'CAT011', name: 'Storage Cabinets', description: 'Filing cabinets, lockers and pedestal drawers', iconName: 'Box', group: 'Non-IT', scope: 'Organization' }
+      { id: 'CAT001', name: 'Laptop', description: 'Portable computer devices assigned to individual employees for daily work', iconName: 'Laptop', group: 'IT', scope: 'Employee', ownerEntity: 'Quadrant IT Services Asset' },
+      { id: 'CAT002', name: 'Monitor', description: 'External high-res display screens for desktop setups and workstations', iconName: 'Monitor', group: 'IT', scope: 'Organization', ownerEntity: 'Quadrant IT Services Asset' },
+      { id: 'CAT003', name: 'Mouse', description: 'Wireless and optical ergonomic pointing devices for workers', iconName: 'Mouse', group: 'IT', scope: 'Employee', ownerEntity: 'Quadrant IT Services Asset' },
+      { id: 'CAT004', name: 'Keyboard', description: 'Mechanical and membrane keyboards assigned to employees', iconName: 'Keyboard', group: 'IT', scope: 'Employee', ownerEntity: 'Quadrant IT Services Asset' },
+      { id: 'CAT005', name: 'Headphones', description: 'Audio headsets and noise-cancelling headphones for workers', iconName: 'Headphones', group: 'IT', scope: 'Employee', ownerEntity: 'Quadrant IT Services Asset' },
+      { id: 'CAT006', name: 'Printer', description: 'Shared department laser printers and corporate office hardware', iconName: 'Printer', group: 'IT', scope: 'Organization', ownerEntity: 'Quadrant IT Services Asset' },
+      { id: 'CAT007', name: 'Cpu', description: 'Central processing units, servers, and corporate IT workstations', iconName: 'Cpu', group: 'IT', scope: 'Organization', ownerEntity: 'Quadrant IT Services Asset' },
+      { id: 'CAT008', name: 'Chairs', description: 'Ergonomic mesh office chairs and executive seating', iconName: 'Briefcase', group: 'Non-IT', scope: 'Organization', ownerEntity: 'Quadrant IT Services Asset' },
+      { id: 'CAT009', name: 'Tables', description: 'Modular office desks, conference and standing tables', iconName: 'Grid', group: 'Non-IT', scope: 'Organization', ownerEntity: 'Quadrant IT Services Asset' },
+      { id: 'CAT010', name: 'Whiteboards', description: 'Magnetic dry-erase boards and presentation panels', iconName: 'Grid', group: 'Non-IT', scope: 'Organization', ownerEntity: 'Quadrant IT Services Asset' },
+      { id: 'CAT011', name: 'Storage Cabinets', description: 'Filing cabinets, lockers and pedestal drawers', iconName: 'Box', group: 'Non-IT', scope: 'Organization', ownerEntity: 'Quadrant IT Services Asset' },
+      { id: 'CAT012', name: 'DSV Laptop', description: 'DSV Logistics client hardware & laptops', iconName: 'Laptop', group: 'IT', scope: 'Employee', ownerEntity: 'DSV Asset' },
+      { id: 'CAT013', name: 'DSV Barcode Scanner', description: 'DSV Warehouse hand-held inventory scanners', iconName: 'Cpu', group: 'IT', scope: 'Organization', ownerEntity: 'DSV Asset' },
+      { id: 'CAT014', name: 'DSV Pallet Rack', description: 'DSV Industrial storage racking systems', iconName: 'Box', group: 'Non-IT', scope: 'Organization', ownerEntity: 'DSV Asset' }
     ];
 
     if (!storedCategories) {
@@ -554,14 +563,8 @@ export const AssetProvider = ({ children }) => {
     }
     
     let parsedCats = JSON.parse(storedCategories);
-    // Ensure default Non-IT items are merged if not present
-    const defaultNonIT = [
-      { id: 'CAT008', name: 'Chairs', description: 'Ergonomic mesh office chairs and executive seating', iconName: 'Briefcase', group: 'Non-IT', scope: 'Organization' },
-      { id: 'CAT009', name: 'Tables', description: 'Modular office desks, conference and standing tables', iconName: 'Grid', group: 'Non-IT', scope: 'Organization' },
-      { id: 'CAT010', name: 'Whiteboards', description: 'Magnetic dry-erase boards and presentation panels', iconName: 'Grid', group: 'Non-IT', scope: 'Organization' },
-      { id: 'CAT011', name: 'Storage Cabinets', description: 'Filing cabinets, lockers and pedestal drawers', iconName: 'Box', group: 'Non-IT', scope: 'Organization' }
-    ];
-    defaultNonIT.forEach(item => {
+    // Ensure default items are merged if not present
+    initialCategories.forEach(item => {
       if (!parsedCats.some(c => c.name.toLowerCase() === item.name.toLowerCase())) {
         parsedCats.push(item);
       }
@@ -570,7 +573,8 @@ export const AssetProvider = ({ children }) => {
     const employeeCategories = ['laptop', 'mouse', 'keyboard', 'headphones', 'mobile', 'headset'];
     parsedCats = parsedCats.map(cat => ({
       ...cat,
-      group: cat.group || (['chairs', 'tables', 'whiteboards', 'storage cabinets', 'desks', 'furniture'].some(k => cat.name.toLowerCase().includes(k)) ? 'Non-IT' : 'IT'),
+      ownerEntity: cat.ownerEntity || (cat.name.toLowerCase().startsWith('dsv') ? 'DSV Asset' : 'Quadrant IT Services Asset'),
+      group: cat.group || (['chairs', 'tables', 'whiteboards', 'storage cabinets', 'desks', 'furniture', 'rack'].some(k => cat.name.toLowerCase().includes(k)) ? 'Non-IT' : 'IT'),
       scope: cat.scope || (employeeCategories.some(k => cat.name.toLowerCase().includes(k)) ? 'Employee' : 'Organization')
     }));
 
@@ -610,10 +614,11 @@ export const AssetProvider = ({ children }) => {
   };
 
   // Helper to add activity logs
-  const logActivity = (activityName, details) => {
+  const logActivity = (activityName, details, customUser = null) => {
+    const operator = customUser || currentUser?.name || "Rakesh Reddy";
     const newLog = {
       id: `ACT${String(activity.length + 1).padStart(3, '0')}`,
-      user: "Rakesh Reddy",
+      user: operator,
       activity: activityName,
       details: details,
       ipAddress: "192.168.1.10",
@@ -674,10 +679,30 @@ export const AssetProvider = ({ children }) => {
     }
   };
 
-  const deleteEmployee = (id) => {
-    const list = employees.filter(item => item.id !== id);
-    saveEmployees(list);
-    logActivity("Delete Employee", `Deleted employee ${id}`);
+  const deleteEmployee = (target) => {
+    const targetId = typeof target === 'object' ? target.id : target;
+    const targetName = typeof target === 'object' ? target.name : null;
+
+    setEmployees(prev => {
+      let removedOne = false;
+      const list = prev.filter(item => {
+        if (typeof target === 'object') {
+          if (item === target) return false;
+          if (!removedOne && item.id === targetId && item.name === targetName) {
+            removedOne = true;
+            return false;
+          }
+        }
+        if (item.id === targetId) {
+          if (targetName && item.name !== targetName) return true;
+          return false;
+        }
+        return true;
+      });
+      localStorage.setItem('it_employees', JSON.stringify(list));
+      return list;
+    });
+    logActivity("Delete Employee", `Deleted employee ${targetId}`);
   };
 
   // Assignments & Returns
@@ -685,14 +710,19 @@ export const AssetProvider = ({ children }) => {
     const emp = employees.find(e => e.id === employeeId);
     if (!emp) return;
 
-    // Update assets to Assigned
+    // Update assets to Assigned with assignedDate and assignedAt timestamp
+    const nowIso = new Date().toISOString();
     const updatedAssets = assets.map(asset => {
       if (assetIds.includes(asset.id)) {
+        const formattedAssignDate = assignDate 
+          ? new Date(assignDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
+          : new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
         return {
           ...asset,
           status: "Assigned",
           assignedTo: employeeId,
-          purchaseDate: asset.purchaseDate // keep original
+          assignedDate: formattedAssignDate,
+          assignedAt: nowIso
         };
       }
       return asset;
@@ -942,16 +972,18 @@ export const AssetProvider = ({ children }) => {
         };
       }
 
+      adminSession.password = password || 'admin123';
       setCurrentUser(adminSession);
       localStorage.setItem('it_current_user', JSON.stringify(adminSession));
-      logActivity("Admin Login", `${adminSession.name} logged in as Admin`);
+      logActivity("Admin Login", `${adminSession.name} logged in as Admin`, adminSession.name);
       return { success: true, user: adminSession };
     } else {
       const emp = employees.find(e => e.username === cleanUser || e.name.toLowerCase() === cleanUser);
       if (emp) {
         const employeeSession = {
           ...emp,
-          role: "Employee"
+          role: "Employee",
+          password: password || 'employee123'
         };
         setCurrentUser(employeeSession);
         localStorage.setItem('it_current_user', JSON.stringify(employeeSession));
@@ -959,6 +991,14 @@ export const AssetProvider = ({ children }) => {
       }
       return { success: false, message: "Invalid employee username (e.g. rakesh.reddy)." };
     }
+  };
+
+  const verifyAdminPassword = (inputPassword) => {
+    if (!inputPassword || !inputPassword.trim()) return false;
+    const cleanPass = inputPassword.trim();
+    const currentPass = currentUser?.password;
+    if (currentPass && cleanPass === currentPass) return true;
+    return cleanPass === 'admin123' || cleanPass === 'admin' || cleanPass === '123456';
   };
 
   const logoutUser = () => {
@@ -991,6 +1031,7 @@ export const AssetProvider = ({ children }) => {
       currentUser,
       loginUser,
       logoutUser,
+      verifyAdminPassword,
       addAsset,
       updateAsset,
       deleteAsset,

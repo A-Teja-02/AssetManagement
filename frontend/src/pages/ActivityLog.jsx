@@ -15,15 +15,31 @@ import {
 import { useAssetManager } from '../hooks/useAssetManager';
 
 const ActivityLog = () => {
-  const { activity } = useAssetManager();
+  const { activity, currentUser } = useAssetManager();
 
   // Search & Pagination states
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Filter logs for current logged in admin user only
+  const currentAdminName = currentUser?.name || 'Rakesh Reddy';
+
+  const adminLogs = activity.filter(log => {
+    const logUser = (log.user || '').toLowerCase().trim();
+    const adminName = currentAdminName.toLowerCase().trim();
+
+    if (logUser === adminName) {
+      if (log.activity === 'Admin Login' && !log.details.toLowerCase().includes(adminName)) {
+        return false;
+      }
+      return true;
+    }
+    return false;
+  });
+
   // Filter logs based on search
-  const filteredLogs = activity.filter(log => {
+  const filteredLogs = adminLogs.filter(log => {
     const searchString = `${log.activity} ${log.details} ${log.dateTime} ${log.user}`.toLowerCase();
     return searchString.includes(searchTerm.toLowerCase());
   });

@@ -236,10 +236,10 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* Middle Grid: User Preferences & System Preferences */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {/* Middle Grid: User Preferences */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* User Preferences */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-6">
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-6">
           <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-3 mb-2">Preferences</h3>
           
           <div className="space-y-4 text-xs">
@@ -342,124 +342,8 @@ const Settings = () => {
             </button>
           </div>
         </div>
-
-        {/* System Configuration preferences */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-6">
-          <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-3 mb-2">System Preferences</h3>
-          
-          <div className="space-y-4 text-xs">
-            {/* Notifications toggle */}
-            {[
-              { 
-                label: 'Email Notifications', 
-                desc: 'Receive email alerts for important activities', 
-                state: emailNotifications, 
-                set: setEmailNotifications, 
-                icon: Bell 
-              },
-              { 
-                label: 'Low Stock Alerts', 
-                desc: 'Get notified for low stock or expiring warranty', 
-                state: lowStockAlerts, 
-                set: setLowStockAlerts, 
-                icon: AlertTriangle 
-              },
-              { 
-                label: 'Maintenance Reminders', 
-                desc: 'Receive reminders for asset maintenance', 
-                state: maintenanceReminders, 
-                set: setMaintenanceReminders, 
-                icon: Wrench 
-              },
-              { 
-                label: 'Auto Generate QR Code', 
-                desc: 'Generate QR code automatically for new assets', 
-                state: autoQrCode, 
-                set: setAutoQrCode, 
-                icon: QrCode 
-              }
-            ].map((toggle, tIdx) => (
-              <div key={tIdx} className={`flex items-center justify-between pb-3 ${tIdx !== 3 ? 'border-b border-slate-50' : ''}`}>
-                <div className="flex items-start gap-2.5">
-                  <div className="p-2 bg-slate-50 rounded-xl text-slate-400 mt-0.5">
-                    <toggle.icon className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-700">{toggle.label}</h4>
-                    <p className="text-[10px] text-slate-400">{toggle.desc}</p>
-                  </div>
-                </div>
-                {/* Switch checkbox */}
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={toggle.state}
-                    onChange={e => toggle.set(e.target.checked)}
-                    className="sr-only peer" 
-                  />
-                  <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex justify-end pt-4 border-t border-slate-100">
-            <button 
-              onClick={handleSaveSystemPreferences}
-              className="py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-lg shadow-blue-500/10 transition-all flex items-center gap-1.5"
-            >
-              <Save className="h-4 w-4" />
-              <span>Save Preferences</span>
-            </button>
-          </div>
-        </div>
       </div>
 
-      {/* Bottom Row: Recent Activity Log log */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
-        <h3 className="text-sm font-bold text-slate-800">Recent Activity</h3>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                <th className="pb-3 pr-4">Activity</th>
-                <th className="pb-3 px-4">Details</th>
-                <th className="pb-3 px-4">Date & Time</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              {activity.slice(0, 3).map((act, index) => {
-                return (
-                  <tr key={index} className="hover:bg-slate-50/50">
-                    <td className="py-3.5 pr-4 font-bold flex items-center gap-2">
-                      <div className={`p-1.5 rounded-lg ${
-                        act.activity === 'Login' ? 'bg-green-50 text-green-600' :
-                        act.activity === 'Update Profile' ? 'bg-blue-50 text-blue-600' :
-                        'bg-purple-50 text-purple-600'
-                      }`}>
-                        {act.activity === 'Login' ? <LogIn className="h-3.5 w-3.5" /> :
-                         act.activity === 'Update Profile' ? <Wrench className="h-3.5 w-3.5" /> :
-                         <Lock className="h-3.5 w-3.5" />
-                        }
-                      </div>
-                      <span>{act.activity}</span>
-                    </td>
-                    <td className="py-3.5 px-4 font-medium text-slate-600">{act.details}</td>
-                    <td className="py-3.5 px-4 text-slate-500 font-medium">{act.dateTime}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="text-center pt-3 border-t border-slate-100">
-          <button className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-all">
-            View all activity &rarr;
-          </button>
-        </div>
-      </div>
     </div>
   );
 };

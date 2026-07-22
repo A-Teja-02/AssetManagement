@@ -24,6 +24,7 @@ import MetricCard from '../components/MetricCard';
 import Avatar from '../components/Avatar';
 import ExcelImportModal from '../components/ExcelImportModal';
 import AssetIconBadge from '../components/AssetIcon';
+import AdminPasswordModal from '../components/AdminPasswordModal';
 
 const Assets = () => {
   const { 
@@ -35,6 +36,8 @@ const Assets = () => {
     deleteAsset,
     showToast
   } = useAssetManager();
+
+  const [passAuthModal, setPassAuthModal] = useState({ isOpen: false, title: '', actionLabel: '', onSuccess: null });
 
   // Search & Filtering states
   const [searchTerm, setSearchTerm] = useState('');
@@ -277,9 +280,20 @@ const Assets = () => {
   };
 
   const handleDelete = () => {
-    deleteAsset(deleteConfirmId);
+    if (!deleteConfirmId) return;
+    const targetAssetId = deleteConfirmId;
     setDeleteConfirmId(null);
-    showToast('Asset deleted successfully');
+
+    setPassAuthModal({
+      isOpen: true,
+      title: "Confirm Delete Asset",
+      actionLabel: `Delete Asset (${targetAssetId})`,
+      onSuccess: () => {
+        deleteAsset(targetAssetId);
+        showToast('Asset deleted successfully');
+        setPassAuthModal({ isOpen: false, title: '', actionLabel: '', onSuccess: null });
+      }
+    });
   };
 
   return (
@@ -436,15 +450,6 @@ const Assets = () => {
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-slate-50 z-20 shadow-xs border-b border-slate-200 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
               <tr>
-                {/* Select All Checkbox */}
-                <th className="py-2.5 px-3 w-10 text-center">
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    onChange={handleSelectAll}
-                    className="rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
-                  />
-                </th>
                 <th className="py-2.5 px-3">Asset ID</th>
                 <th className="py-2.5 px-3">Asset Type / Model</th>
                 <th className="py-2.5 px-3">Serial Number / Barcode</th>
@@ -467,6 +472,15 @@ const Assets = () => {
                   </>
                 )}
                 <th className="py-2.5 px-3 text-right pr-4">Quick Actions</th>
+                {/* Select All Checkbox */}
+                <th className="py-2.5 px-3 w-10 text-center">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={handleSelectAll}
+                    className="rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
+                  />
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700 bg-white">
@@ -489,16 +503,6 @@ const Assets = () => {
                         isSelected ? 'bg-blue-50/30' : ''
                       }`}
                     >
-                      {/* Checkbox */}
-                      <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={(e) => handleToggleSelect(asset.id, e)}
-                          className="rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
-                        />
-                      </td>
-
                       {/* Asset ID */}
                       <td className="py-2.5 px-3 font-extrabold text-blue-600">
                         <div className="flex items-center gap-2">
@@ -599,6 +603,16 @@ const Assets = () => {
                             <Trash className="h-3.5 w-3.5" />
                           </button>
                         </div>
+                      </td>
+
+                      {/* Checkbox */}
+                      <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => handleToggleSelect(asset.id, e)}
+                          className="rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
+                        />
                       </td>
                     </tr>
                   );
@@ -918,11 +932,7 @@ const Assets = () => {
               </button>
               <button 
                 type="button"
-                onClick={() => {
-                  deleteAsset(deleteConfirmId);
-                  showToast(`Successfully deleted asset ${deleteConfirmId}!`);
-                  setDeleteConfirmId(null);
-                }}
+                onClick={handleDelete}
                 className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all shadow-md shadow-red-500/10 cursor-pointer"
               >
                 Delete Asset
@@ -977,6 +987,15 @@ const Assets = () => {
           { Type: "Mouse", Brand: "Logitech", Model: "MX Master 3S", SerialNumber: "QITS-SN-7703", Status: "Available", Scope: "Employee" }
         ]}
         templateFileName="Assets_Import_Template.xlsx"
+      />
+
+      {/* Admin Security Password Verification Modal */}
+      <AdminPasswordModal
+        isOpen={passAuthModal.isOpen}
+        title={passAuthModal.title}
+        actionLabel={passAuthModal.actionLabel}
+        onClose={() => setPassAuthModal({ isOpen: false, title: '', actionLabel: '', onSuccess: null })}
+        onSuccess={passAuthModal.onSuccess || (() => {})}
       />
     </div>
   );

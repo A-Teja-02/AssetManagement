@@ -23,6 +23,7 @@ import MetricCard from '../components/MetricCard';
 import Avatar from '../components/Avatar';
 import ExcelImportModal from '../components/ExcelImportModal';
 import AssetIconBadge from '../components/AssetIcon';
+import AdminPasswordModal from '../components/AdminPasswordModal';
 
 const Employees = () => {
   const { 
@@ -33,6 +34,8 @@ const Employees = () => {
     deleteEmployee,
     showToast
   } = useAssetManager();
+
+  const [passAuthModal, setPassAuthModal] = useState({ isOpen: false, title: '', actionLabel: '', onSuccess: null });
 
   // Search, Pagination, Filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -143,9 +146,20 @@ const Employees = () => {
   };
 
   const handleDelete = () => {
-    deleteEmployee(deleteConfirmEmp.id);
-    showToast('Employee deleted successfully', 'success');
+    if (!deleteConfirmEmp) return;
+    const targetEmp = deleteConfirmEmp;
     setDeleteConfirmEmp(null);
+
+    setPassAuthModal({
+      isOpen: true,
+      title: "Confirm Delete Employee",
+      actionLabel: `Delete Employee (${targetEmp.name})`,
+      onSuccess: () => {
+        deleteEmployee(targetEmp.id);
+        showToast('Employee deleted successfully', 'success');
+        setPassAuthModal({ isOpen: false, title: '', actionLabel: '', onSuccess: null });
+      }
+    });
   };
 
   // Excel Bulk Import Handler for Employees
@@ -272,21 +286,21 @@ const Employees = () => {
 
         {/* Employee Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                <th className="pb-3 pr-4">Employee ID</th>
-                <th className="pb-3 px-4">Name</th>
-                <th className="pb-3 px-4">Department</th>
-                <th className="pb-3 px-4">Designation</th>
-                <th className="pb-3 px-4">Email</th>
-                <th className="pb-3 px-4">Phone</th>
-                <th className="pb-3 px-4">Assets Assigned</th>
-                <th className="pb-3 px-4">Status</th>
-                <th className="pb-3 pl-4 text-right">Actions</th>
+                <th className="pb-3 pr-2">Employee ID</th>
+                <th className="pb-3 px-3">Name</th>
+                <th className="pb-3 px-3">Department</th>
+                <th className="pb-3 px-3">Designation</th>
+                <th className="pb-3 px-3">Email</th>
+                <th className="pb-3 px-3">Phone</th>
+                <th className="pb-3 px-3 text-center">Assets</th>
+                <th className="pb-3 px-3 text-center">Status</th>
+                <th className="pb-3 pl-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+            <tbody className="divide-y divide-slate-100 text-[11px] text-slate-700 bg-white">
               {paginatedEmployees.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-8 text-center text-slate-400">
@@ -300,61 +314,61 @@ const Employees = () => {
                     <tr 
                       key={emp.id} 
                       onClick={() => handleOpenViewModal(emp)}
-                      className="hover:bg-slate-50/50 transition-all cursor-pointer"
+                      className="hover:bg-slate-50/50 transition-all cursor-pointer font-medium"
                     >
-                      <td className="py-4 pr-4 font-bold text-slate-500">
+                      <td className="py-2.5 pr-2 font-bold text-slate-500">
                         {emp.id}
                       </td>
-                      <td className="py-4 px-4 font-bold text-slate-800">
-                        <div className="flex items-center gap-3">
-                          <Avatar name={emp.name} className="h-8 w-8 rounded-xl ring-2 ring-slate-100" />
-                          <span>{emp.name}</span>
+                      <td className="py-2.5 px-3 font-bold text-slate-800">
+                        <div className="flex items-center gap-2">
+                          <Avatar name={emp.name} className="h-7 w-7 rounded-xl ring-2 ring-slate-100 shrink-0" />
+                          <span className="truncate max-w-[120px]" title={emp.name}>{emp.name}</span>
                         </div>
                       </td>
-                      <td className="py-4 px-4 font-semibold text-slate-600">{emp.department}</td>
-                      <td className="py-4 px-4 text-slate-600">{emp.designation}</td>
-                      <td className="py-4 px-4 text-slate-500">{emp.email}</td>
-                      <td className="py-4 px-4 text-slate-500 font-medium">{emp.phone}</td>
-                      <td className="py-4 px-4">
+                      <td className="py-2.5 px-3 text-slate-600 truncate max-w-[100px]" title={emp.department}>{emp.department}</td>
+                      <td className="py-2.5 px-3 text-slate-600 truncate max-w-[120px]" title={emp.designation}>{emp.designation}</td>
+                      <td className="py-2.5 px-3 text-slate-500 truncate max-w-[140px]" title={emp.email}>{emp.email}</td>
+                      <td className="py-2.5 px-3 text-slate-500 font-semibold whitespace-nowrap">{emp.phone}</td>
+                      <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                         <span 
                           onClick={(e) => { e.stopPropagation(); handleOpenViewModal(emp); }}
-                          className="px-2.5 py-1 rounded-lg text-xs font-bold text-blue-600 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-all"
+                          className="px-2 py-0.5 rounded-lg text-[10px] font-bold text-blue-600 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-all"
                         >
                           {assignedAssets.length}
                         </span>
                       </td>
-                      <td className="py-4 px-4">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
+                      <td className="py-2.5 px-3 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold ${
                           emp.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
                         }`}>
                           {emp.status}
                         </span>
                       </td>
-                      <td className="py-4 pl-4 text-right">
-                        <div className="flex items-center justify-end gap-2.5">
+                      <td className="py-2.5 pl-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleOpenViewModal(emp); }}
-                            className="p-1.5 hover:bg-slate-100 rounded-lg text-blue-600 transition-all"
+                            className="p-1 hover:bg-slate-100 rounded-lg text-blue-600 transition-all cursor-pointer"
                             title="View"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-3.5 w-3.5" />
                           </button>
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleOpenEditModal(emp); }}
-                            className="p-1.5 hover:bg-slate-100 rounded-lg text-blue-600 transition-all"
+                            className="p-1 hover:bg-slate-100 rounded-lg text-blue-600 transition-all cursor-pointer"
                             title="Edit"
                           >
-                            <Pencil className="h-4 w-4" />
+                            <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
                               setDeleteConfirmEmp({ id: emp.id, name: emp.name });
                             }}
-                            className="p-1.5 hover:bg-red-50 rounded-lg text-red-500 transition-all"
+                            className="p-1 hover:bg-red-50 rounded-lg text-red-500 transition-all cursor-pointer"
                             title="Delete"
                           >
-                            <Trash className="h-4 w-4" />
+                            <Trash className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       </td>
@@ -737,11 +751,7 @@ const Employees = () => {
               </button>
               <button 
                 type="button"
-                onClick={() => {
-                  deleteEmployee(deleteConfirmEmp.id);
-                  showToast(`Successfully deleted employee record ${deleteConfirmEmp.name}!`);
-                  setDeleteConfirmEmp(null);
-                }}
+                onClick={handleDelete}
                 className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all shadow-md shadow-red-500/10 cursor-pointer"
               >
                 Delete Record
@@ -750,6 +760,15 @@ const Employees = () => {
           </div>
         </div>
       )}
+
+      {/* Admin Security Password Verification Modal */}
+      <AdminPasswordModal
+        isOpen={passAuthModal.isOpen}
+        title={passAuthModal.title}
+        actionLabel={passAuthModal.actionLabel}
+        onClose={() => setPassAuthModal({ isOpen: false, title: '', actionLabel: '', onSuccess: null })}
+        onSuccess={passAuthModal.onSuccess || (() => {})}
+      />
 
       {/* Excel Import Modal for Employees */}
       <ExcelImportModal

@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, 
   RotateCcw, 
   CheckCircle, 
   AlertCircle, 
   ChevronRight,
+  ChevronDown,
+  Check,
   Eye,
   Download,
+  FileSpreadsheet,
   Info,
   X
 } from 'lucide-react';
@@ -19,28 +22,129 @@ const ReturnAsset = () => {
     assets, 
     returnAssets, 
     activity,
+    currentUser,
     showToast 
   } = useAssetManager();
 
+  const formatDateWithYear = (dateStr) => {
+    if (!dateStr) return '21 Jul 2026';
+    const parts = dateStr.split(',').map(s => s.trim());
+    if (/\b\d{4}\b/.test(parts[0])) {
+      return parts[0];
+    }
+    if (parts.length >= 2 && /\b\d{4}\b/.test(parts[1])) {
+      return `${parts[0]}, ${parts[1]}`;
+    }
+    return parts[0];
+  };
+
+  // State for showing full return history
+  const [showAllHistory, setShowAllHistory] = useState(false);
+
   // Selected Employee & Assets states
-  const [selectedEmpId, setSelectedEmpId] = useState(employees[0]?.id || '');
+  const [selectedEmpId, setSelectedEmpId] = useState('');
   const [selectedAssetIds, setSelectedAssetIds] = useState([]);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+  // Auto-select initial employee who has assigned assets
+  useEffect(() => {
+    if (!selectedEmpId && employees.length > 0) {
+      const empWithAssets = employees.find(e => assets.some(a => (a.assignedTo === e.id || a.assignedTo === e.name) && a.status === 'Assigned'));
+      if (empWithAssets) {
+        setSelectedEmpId(empWithAssets.id);
+      } else if (employees[0]) {
+        setSelectedEmpId(employees[0].id);
+      }
+    }
+  }, [employees, assets, selectedEmpId]);
+
+  // Employee Combobox Dropdown state
+  const [isEmpDropdownOpen, setIsEmpDropdownOpen] = useState(false);
+  const [empSearchQuery, setEmpSearchQuery] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const empDropdownRef = useRef(null);
+
+  // Sync displayed search text when selectedEmpId changes or dropdown closes
+  useEffect(() => {
+    const initialEmp = employees.find(e => e.id === selectedEmpId);
+    if (initialEmp && !isTyping) {
+      setEmpSearchQuery(`${initialEmp.id} - ${initialEmp.name}`);
+    }
+  }, [selectedEmpId, isTyping, employees]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (empDropdownRef.current && !empDropdownRef.current.contains(event.target)) {
+        setIsEmpDropdownOpen(false);
+        setIsTyping(false);
+        const cur = employees.find(e => e.id === selectedEmpId);
+        if (cur) setEmpSearchQuery(`${cur.id} - ${cur.name}`);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectedEmpId, employees]);
+
+  const filteredEmployees = employees.filter(emp => {
+    if (!isTyping || !empSearchQuery.trim()) return true;
+    const q = empSearchQuery.toLowerCase().trim();
+    const fullText = `${emp.id} ${emp.name} ${emp.department} ${emp.email}`.toLowerCase();
+    return fullText.includes(q);
+  });
   
+  // 1. Get employee details
+  const currentEmp = employees.find(e => e.id === selectedEmpId);
+
   // Form details states
   const [returnDate, setReturnDate] = useState('2026-07-10');
-  const [returnedBy, setReturnedBy] = useState('Rakesh Reddy (Admin)');
+  const [returnedBy, setReturnedBy] = useState(currentEmp ? currentEmp.name : '');
   const [reason, setReason] = useState('Employee Resignation');
   const [condition, setCondition] = useState('Good');
   const [remarks, setRemarks] = useState('');
 
-  // Confirmation Modal state
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  // ReturnedBy Combobox state
+  const [isReturnedByDropdownOpen, setIsReturnedByDropdownOpen] = useState(false);
+  const [returnedBySearchQuery, setReturnedBySearchQuery] = useState(returnedBy);
+  const [isReturnedByTyping, setIsReturnedByTyping] = useState(false);
+  const returnedByDropdownRef = useRef(null);
 
-  // 1. Get employee details
-  const currentEmp = employees.find(e => e.id === selectedEmpId);
+  useEffect(() => {
+    if (!isReturnedByTyping) {
+      setReturnedBySearchQuery(returnedBy);
+    }
+  }, [returnedBy, isReturnedByTyping]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (returnedByDropdownRef.current && !returnedByDropdownRef.current.contains(event.target)) {
+        setIsReturnedByDropdownOpen(false);
+        setIsReturnedByTyping(false);
+        setReturnedBySearchQuery(returnedBy);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [returnedBy]);
+
+  const filteredReturnedByEmployees = employees.filter(emp => {
+    if (!isReturnedByTyping || !returnedBySearchQuery.trim()) return true;
+    const q = returnedBySearchQuery.toLowerCase().trim();
+    return `${emp.id} ${emp.name} ${emp.department} ${emp.email}`.toLowerCase().includes(q);
+  });
+
+  useEffect(() => {
+    if (currentEmp) {
+      setReturnedBy(currentEmp.name);
+      setReturnedBySearchQuery(currentEmp.name);
+    }
+  }, [selectedEmpId, currentEmp]);
 
   // 2. Find assets currently assigned to this employee
-  const assignedAssets = assets.filter(asset => asset.assignedTo === selectedEmpId);
+  const assignedAssets = assets.filter(asset => {
+    if (asset.status !== 'Assigned') return false;
+    if (!selectedEmpId && !currentEmp) return false;
+    return asset.assignedTo === selectedEmpId || (currentEmp && (asset.assignedTo === currentEmp.name || asset.assignedTo === currentEmp.email));
+  });
 
   // 3. Toggle assets checked for return
   const handleToggleAsset = (id) => {
@@ -67,24 +171,114 @@ const ReturnAsset = () => {
     returnAssets(selectedEmpId, selectedAssetIds, returnDate, condition, remarks);
     
     setIsConfirmOpen(false);
-    showToast(`Successfully processed return of ${selectedAssetIds.length} assets from ${currentEmp.name}!`);
+    showToast(`Successfully processed return of ${selectedAssetIds.length} assets from ${currentEmp?.name || 'Employee'}!`);
     setSelectedAssetIds([]);
     setRemarks('');
   };
 
-  const returnLogs = activity.filter(act => act.activity === "Return Asset");
+  const activeAdminName = currentUser?.name || 'Rakesh Reddy';
 
-  const formatDateWithYear = (dateStr) => {
-    if (!dateStr) return '-';
-    const parts = dateStr.split(',').map(s => s.trim());
-    if (/\b\d{4}\b/.test(parts[0])) {
-      return parts[0];
+  // Map real return activity logs into history items
+  const realReturnLogs = (activity || [])
+    .filter(a => a.activity === 'Return Asset')
+    .map((log, index) => {
+      const empIdMatch = log.details.match(/EMP\d+/i);
+      const empId = empIdMatch ? empIdMatch[0] : '';
+      const emp = employees.find(e => e.id === empId || log.details.toLowerCase().includes(e.name.toLowerCase()));
+      const condMatch = log.details.match(/Condition:\s*(\w+)/i);
+      const countMatch = log.details.match(/(\d+)\s+assets?/i);
+      const assetCountStr = countMatch ? `${countMatch[1]} Asset${parseInt(countMatch[1]) > 1 ? 's' : ''}` : '1 Asset';
+
+      return {
+        id: `RET${String(100 - index).padStart(4, '0')}`,
+        employeeName: emp ? emp.name : (log.details.match(/from\s+([^(!,]+)/i)?.[1]?.trim() || 'Rahul Sharma'),
+        employeeId: emp ? emp.id : (empId || 'EMP002'),
+        assetsCount: assetCountStr,
+        returnDate: formatDateWithYear(log.dateTime),
+        returnedTo: log.user || activeAdminName,
+        reason: log.details.toLowerCase().includes('resig') ? 'Employee Resignation' : 'Standard Return',
+        condition: condMatch ? condMatch[1] : 'Good',
+        details: log.details
+      };
+    });
+
+  // Default initial return history items for rich display
+  const defaultReturnHistory = [
+    {
+      id: 'RET0004',
+      employeeName: 'Rahul Sharma',
+      employeeId: 'EMP002',
+      assetsCount: '1 Asset',
+      returnDate: 'Jul 21, 2026',
+      returnedTo: activeAdminName,
+      reason: 'Employee Resignation',
+      condition: 'Good',
+      details: 'Returned 1 asset (Latitude 5440) due to resignation.'
+    },
+    {
+      id: 'RET0003',
+      employeeName: 'Rahul Sharma',
+      employeeId: 'EMP002',
+      assetsCount: '1 Asset',
+      returnDate: '09 Jul 2026',
+      returnedTo: activeAdminName,
+      reason: 'Employee Resignation',
+      condition: 'Good',
+      details: 'Returned 1 asset (Dell Monitor 27")'
+    },
+    {
+      id: 'RET0002',
+      employeeName: 'Priya Verma',
+      employeeId: 'EMP003',
+      assetsCount: '2 Assets',
+      returnDate: '01 Jul 2026',
+      returnedTo: activeAdminName,
+      reason: 'Role Change',
+      condition: 'Good',
+      details: 'Returned 2 assets (Logitech Keyboard & Mouse)'
+    },
+    {
+      id: 'RET0001',
+      employeeName: 'Amit Patel',
+      employeeId: 'EMP004',
+      assetsCount: '1 Asset',
+      returnDate: '25 Jun 2026',
+      returnedTo: activeAdminName,
+      reason: 'Hardware Upgrade',
+      condition: 'Fair',
+      details: 'Returned 1 old Laptop for replacement'
     }
-    if (parts.length >= 2 && /\b\d{4}\b/.test(parts[1])) {
-      return `${parts[0]}, ${parts[1]}`;
-    }
-    return parts[0];
+  ];
+
+  const allReturnHistory = [...realReturnLogs, ...defaultReturnHistory.filter(def => !realReturnLogs.some(r => r.id === def.id))];
+  const displayedHistory = showAllHistory ? allReturnHistory : allReturnHistory.slice(0, 5);
+
+  const handleExportReturnHistory = () => {
+    const headers = ['Return ID', 'Employee', 'Employee ID', 'Assets Returned', 'Return Date', 'Returned To', 'Reason', 'Condition', 'Details'];
+    const rows = allReturnHistory.map(item => [
+      item.id,
+      `"${item.employeeName}"`,
+      item.employeeId,
+      `"${item.assetsCount}"`,
+      `"${item.returnDate}"`,
+      `"${item.returnedTo}"`,
+      `"${item.reason}"`,
+      `"${item.condition}"`,
+      `"${item.details.replace(/"/g, '""')}"`
+    ]);
+    
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Returned_Assets_History_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Returned assets history exported to CSV!");
   };
+
+
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -133,15 +327,77 @@ const ReturnAsset = () => {
 
             <div className="space-y-3">
               <label className="block text-xs font-bold text-slate-500">Select Employee *</label>
-              <select
-                value={selectedEmpId}
-                onChange={e => { setSelectedEmpId(e.target.value); setSelectedAssetIds([]); }}
-                className="w-full p-3 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none font-semibold text-slate-700 bg-slate-50/50"
-              >
-                {employees.map(emp => (
-                  <option key={emp.id} value={emp.id}>{emp.id} - {emp.name}</option>
-                ))}
-              </select>
+              
+              {/* Searchable Combobox Dropdown */}
+              <div className="relative" ref={empDropdownRef}>
+                <div 
+                  onClick={() => setIsEmpDropdownOpen(prev => !prev)}
+                  className="w-full p-2.5 border border-slate-200/90 rounded-xl text-xs bg-slate-50/80 hover:bg-white focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all cursor-pointer flex items-center justify-between gap-2 shadow-2xs"
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <input
+                      type="text"
+                      value={empSearchQuery}
+                      onFocus={(e) => {
+                        e.target.select();
+                        setIsEmpDropdownOpen(true);
+                      }}
+                      onChange={(e) => {
+                        setEmpSearchQuery(e.target.value);
+                        setIsTyping(true);
+                        setIsEmpDropdownOpen(true);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEmpDropdownOpen(true);
+                      }}
+                      placeholder="Type name or ID to filter..."
+                      className="w-full bg-transparent focus:outline-none font-semibold text-slate-700 text-xs placeholder:text-slate-400 placeholder:font-normal cursor-pointer focus:cursor-text"
+                    />
+                  </div>
+                  <ChevronDown className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${isEmpDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+
+                {isEmpDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200/90 rounded-2xl shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-2 max-h-60 overflow-y-auto">
+                    {filteredEmployees.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-slate-400 font-medium">
+                        No employee matching "{empSearchQuery}"
+                      </div>
+                    ) : (
+                      filteredEmployees.map(emp => (
+                        <button
+                          key={emp.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedEmpId(emp.id);
+                            setSelectedAssetIds([]);
+                            setEmpSearchQuery(`${emp.id} - ${emp.name}`);
+                            setIsTyping(false);
+                            setIsEmpDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3.5 py-2.5 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                            selectedEmpId === emp.id 
+                              ? 'bg-blue-50 text-blue-600 font-bold' 
+                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <Avatar name={emp.name} className="h-6 w-6 rounded-full" textSize="text-[8px]" />
+                            <div className="truncate">
+                              <span className="font-extrabold text-blue-600 mr-1.5">{emp.id}</span>
+                              <span>{emp.name}</span>
+                              <span className="text-[10px] text-slate-400 ml-2">({emp.department})</span>
+                            </div>
+                          </div>
+                          {selectedEmpId === emp.id && <Check className="h-4 w-4 text-blue-600 shrink-0" />}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Detailed employee card */}
@@ -182,43 +438,37 @@ const ReturnAsset = () => {
             </h3>
 
             {/* Asset checklist table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+            <div className="w-full">
+              <table className="w-full text-left border-collapse text-xs table-fixed">
                 <thead>
                   <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    <th className="pb-3 pr-4">Asset ID</th>
-                    <th className="pb-3 px-4">Asset Type</th>
-                    <th className="pb-3 px-4">Model</th>
-                    <th className="pb-3 px-4">Assigned Date</th>
-                    <th className="pb-3 px-4">Status</th>
-                    <th className="pb-3 pl-4 text-center">Select</th>
+                    <th className="pb-2.5 px-1.5 w-[16%]">Asset ID</th>
+                    <th className="pb-2.5 px-1.5 w-[20%]">Asset Type</th>
+                    <th className="pb-2.5 px-1.5 w-[28%]">Model</th>
+                    <th className="pb-2.5 px-1.5 w-[20%]">Assigned Date</th>
+                    <th className="pb-2.5 px-1.5 w-[16%] text-center">Select</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
                   {assignedAssets.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-slate-400">
+                      <td colSpan={5} className="py-8 text-center text-slate-400 font-semibold">
                         No assets currently assigned to this employee.
                       </td>
                     </tr>
                   ) : (
                     assignedAssets.map((asset) => (
-                      <tr key={asset.id} className="hover:bg-slate-50/50">
-                        <td className="py-3 pr-4 font-bold text-blue-600">{asset.id}</td>
-                        <td className="py-3 px-4 font-medium">{asset.type}</td>
-                        <td className="py-3 px-4 text-slate-600">{asset.brand} {asset.model}</td>
-                        <td className="py-3 px-4 text-slate-500">{asset.purchaseDate}</td>
-                        <td className="py-3 px-4">
-                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-bold">
-                            Assigned
-                          </span>
-                        </td>
-                        <td className="py-3 pl-4 text-center">
+                      <tr key={asset.id} className="hover:bg-slate-50/80 transition-colors cursor-pointer" onClick={() => handleToggleAsset(asset.id)}>
+                        <td className="py-2.5 px-1.5 font-extrabold text-blue-600 truncate">{asset.id}</td>
+                        <td className="py-2.5 px-1.5 font-bold text-slate-800 truncate">{asset.type}</td>
+                        <td className="py-2.5 px-1.5 text-slate-600 truncate">{asset.brand} {asset.model}</td>
+                        <td className="py-2.5 px-1.5 text-slate-500 text-[10px] font-medium truncate">{asset.purchaseDate || '10 May 2024'}</td>
+                        <td className="py-2.5 px-1.5 text-center" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
                             checked={selectedAssetIds.includes(asset.id)}
                             onChange={() => handleToggleAsset(asset.id)}
-                            className="rounded text-blue-600 border-slate-300 focus:ring-blue-500"
+                            className="rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
                           />
                         </td>
                       </tr>
@@ -259,14 +509,71 @@ const ReturnAsset = () => {
                 </div>
                 <div className="space-y-1">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Returned By *</label>
-                  <select
-                    value={returnedBy}
-                    onChange={e => setReturnedBy(e.target.value)}
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none font-semibold text-slate-700 bg-slate-50/50"
-                  >
-                    <option value="Rakesh Reddy (Admin)">Rakesh Reddy (Admin)</option>
-                    <option value="Amit Verma (Admin)">Amit Verma (Admin)</option>
-                  </select>
+                  <div className="relative" ref={returnedByDropdownRef}>
+                    <div 
+                      onClick={() => setIsReturnedByDropdownOpen(prev => !prev)}
+                      className="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50/50 hover:bg-white focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all cursor-pointer flex items-center justify-between gap-2"
+                    >
+                      <input
+                        type="text"
+                        value={returnedBySearchQuery}
+                        onFocus={(e) => {
+                          e.target.select();
+                          setIsReturnedByDropdownOpen(true);
+                        }}
+                        onChange={(e) => {
+                          setReturnedBySearchQuery(e.target.value);
+                          setIsReturnedByTyping(true);
+                          setIsReturnedByDropdownOpen(true);
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsReturnedByDropdownOpen(true);
+                        }}
+                        placeholder="Type name or ID..."
+                        className="w-full bg-transparent focus:outline-none font-semibold text-slate-700 text-xs placeholder:text-slate-400 placeholder:font-normal cursor-pointer focus:cursor-text"
+                      />
+                      <ChevronDown className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${isReturnedByDropdownOpen ? 'rotate-180' : ''}`} />
+                    </div>
+
+                    {isReturnedByDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200/90 rounded-2xl shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-2 max-h-60 overflow-y-auto">
+                        {filteredReturnedByEmployees.length === 0 ? (
+                          <div className="p-3 text-center text-xs text-slate-400 font-medium">
+                            No employee matching "{returnedBySearchQuery}"
+                          </div>
+                        ) : (
+                          filteredReturnedByEmployees.map(emp => (
+                            <button
+                              key={emp.id}
+                              type="button"
+                              onClick={() => {
+                                setReturnedBy(emp.name);
+                                setReturnedBySearchQuery(emp.name);
+                                setIsReturnedByTyping(false);
+                                setIsReturnedByDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-3.5 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                                returnedBy === emp.name 
+                                  ? 'bg-blue-50 text-blue-600 font-bold' 
+                                  : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Avatar name={emp.name} className="h-5 w-5 rounded-full" textSize="text-[7px]" />
+                                <div className="truncate">
+                                  <span className="font-extrabold text-blue-600 mr-1.5">{emp.id}</span>
+                                  <span>{emp.name}</span>
+                                  <span className="text-[10px] text-slate-400 ml-1.5">({emp.department})</span>
+                                </div>
+                              </div>
+                              {returnedBy === emp.name && <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -340,9 +647,13 @@ const ReturnAsset = () => {
       <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-bold text-slate-800">Returned Assets History</h3>
-          <button className="flex items-center justify-center gap-1.5 py-1.5 px-3 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold text-xs rounded-xl">
-            <Download className="h-4 w-4" />
-            <span>Export</span>
+          <button 
+            type="button"
+            onClick={handleExportReturnHistory}
+            className="flex items-center justify-center gap-1.5 py-1.5 px-3.5 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl shadow-2xs transition-all cursor-pointer"
+          >
+            <FileSpreadsheet className="h-4 w-4 text-emerald-600 shrink-0" />
+            <span>Export CSV</span>
           </button>
         </div>
         
@@ -361,56 +672,48 @@ const ReturnAsset = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {returnLogs.slice(0, 3).map((log, index) => {
-                const empIdMatch = log.details.match(/EMP\d+/);
-                const empId = empIdMatch ? empIdMatch[0] : '';
-                const emp = employees.find(e => e.id === empId);
-                const condMatch = log.details.match(/Condition:\s*(\w+)/);
-                const cond = condMatch ? condMatch[1] : 'Good';
-
-                return (
-                  <tr key={index} className="hover:bg-slate-50/50">
-                    <td className="py-4 pr-4 font-bold text-blue-600">RET000{4 - index}</td>
-                    <td className="py-4 px-4 font-bold">
-                      {emp ? (
-                        <div className="flex items-center gap-2">
-                          <Avatar name={emp.name} className="h-6 w-6 rounded-full" textSize="text-[8px]" />
-                          <span>{emp.name} ({emp.id})</span>
-                        </div>
-                      ) : (
-                        <span>Rahul Sharma ({empId || 'EMP002'})</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-4 font-bold text-blue-600">1 Asset</td>
-                    <td className="py-4 px-4 text-slate-500">{formatDateWithYear(log.dateTime)}</td>
-                    <td className="py-4 px-4 text-slate-600">{log.user} (Admin)</td>
-                    <td className="py-4 px-4 text-slate-500">Employee Resignation</td>
-                    <td className="py-4 px-4">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                        cond === 'Good' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
-                      }`}>
-                        {cond}
-                      </span>
-                    </td>
-                    <td className="py-4 pl-4 text-right">
-                      <button 
-                        onClick={() => showToast(`Details: ${log.details}`, "info")}
-                        className="p-1.5 hover:bg-slate-100 rounded-lg text-blue-600"
-                        title="View Details"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+              {displayedHistory.map((item, index) => (
+                <tr key={index} className="hover:bg-slate-50/50">
+                  <td className="py-4 pr-4 font-bold text-blue-600">{item.id}</td>
+                  <td className="py-4 px-4 font-bold">
+                    <div className="flex items-center gap-2">
+                      <Avatar name={item.employeeName} className="h-6 w-6 rounded-full" textSize="text-[8px]" />
+                      <span>{item.employeeName} ({item.employeeId})</span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4 font-bold text-blue-600">{item.assetsCount}</td>
+                  <td className="py-4 px-4 text-slate-500">{item.returnDate}</td>
+                  <td className="py-4 px-4 font-semibold text-slate-700">{item.returnedBy}</td>
+                  <td className="py-4 px-4 text-slate-500">{item.reason}</td>
+                  <td className="py-4 px-4">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                      item.condition === 'Good' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
+                    }`}>
+                      {item.condition}
+                    </span>
+                  </td>
+                  <td className="py-4 pl-4 text-right">
+                    <button 
+                      onClick={() => showToast(`Details: ${item.details}`, "info")}
+                      className="p-1.5 hover:bg-slate-100 rounded-lg text-blue-600 cursor-pointer"
+                      title="View Details"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
 
         <div className="text-center pt-2 border-t border-slate-100">
-          <button className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-all">
-            View all returned assets
+          <button 
+            type="button"
+            onClick={() => setShowAllHistory(!showAllHistory)}
+            className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-all cursor-pointer"
+          >
+            {showAllHistory ? "Show less" : `View all returned assets (${allReturnHistory.length})`}
           </button>
         </div>
       </div>
