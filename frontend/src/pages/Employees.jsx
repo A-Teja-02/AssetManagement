@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Users, 
   UserCheck, 
@@ -11,7 +11,10 @@ import {
   Pencil, 
   Trash, 
   ChevronLeft, 
-  ChevronRight,
+  ChevronRight, 
+  ChevronDown,
+  Check,
+  Upload,
   FileSpreadsheet,
   Download,
   X,
@@ -42,6 +45,19 @@ const Employees = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteConfirmEmp, setDeleteConfirmEmp] = useState(null);
   const [deptFilter, setDeptFilter] = useState('All');
+  const [isDeptDropdownOpen, setIsDeptDropdownOpen] = useState(false);
+  const deptDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (deptDropdownRef.current && !deptDropdownRef.current.contains(e.target)) {
+        setIsDeptDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const itemsPerPage = 10;
@@ -269,29 +285,38 @@ const Employees = () => {
               />
             </div>
             
-            {/* Department Filter Dropdown */}
-            <select
-              value={deptFilter}
-              onChange={e => { setDeptFilter(e.target.value); setCurrentPage(1); }}
-              className="px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold cursor-pointer"
-            >
-              {departmentsList.map(dept => (
-                <option key={dept} value={dept}>{dept === 'All' ? 'All Departments' : dept}</option>
-              ))}
-            </select>
-
-            {/* Excel Import Trigger */}
-            <div className="relative group">
-              <button 
+            {/* Custom Department Filter Dropdown */}
+            <div className="relative" ref={deptDropdownRef}>
+              <button
                 type="button"
-                onClick={() => setIsImportModalOpen(true)}
-                className="h-8 w-8 rounded-full border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 flex items-center justify-center transition-all cursor-pointer shadow-xs shrink-0"
+                onClick={() => setIsDeptDropdownOpen(!isDeptDropdownOpen)}
+                className="flex items-center justify-between gap-1.5 px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold cursor-pointer transition-all min-w-[130px]"
               >
-                <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+                <span>{deptFilter === 'All' ? 'All Departments' : deptFilter}</span>
+                <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${isDeptDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-bold z-30 shadow-md">
-                Import Employees
-              </div>
+              
+              {isDeptDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1.5 w-48 bg-white border border-slate-200/80 rounded-2xl shadow-xl py-1 z-30 animate-scale-in text-xs font-semibold text-slate-700">
+                  {departmentsList.map(dept => (
+                    <button
+                      key={dept}
+                      type="button"
+                      onClick={() => {
+                        setDeptFilter(dept);
+                        setCurrentPage(1);
+                        setIsDeptDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                        deptFilter === dept ? 'bg-blue-50/50 text-blue-600 font-bold' : ''
+                      }`}
+                    >
+                      <span>{dept === 'All' ? 'All Departments' : dept}</span>
+                      {deptFilter === dept && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Excel Export Trigger */}
@@ -301,10 +326,24 @@ const Employees = () => {
                 onClick={handleExportEmployees}
                 className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-all cursor-pointer shadow-xs shrink-0"
               >
-                <Download className="h-4 w-4" />
+                <Upload className="h-4 w-4 text-slate-600" />
               </button>
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-bold z-30 shadow-md">
                 Export Employees
+              </div>
+            </div>
+
+            {/* Excel Import Trigger */}
+            <div className="relative group">
+              <button 
+                type="button"
+                onClick={() => setIsImportModalOpen(true)}
+                className="h-8 w-8 rounded-full border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 flex items-center justify-center transition-all cursor-pointer shadow-xs shrink-0"
+              >
+                <Download className="h-4 w-4 text-emerald-600" />
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-bold z-30 shadow-md">
+                Import Employees
               </div>
             </div>
 
