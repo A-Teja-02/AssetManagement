@@ -140,8 +140,8 @@ const Reports = () => {
     { name: 'IT', value: 45, color: '#2563eb', label: 'IT (45%)' },
     { name: 'HR', value: 20, color: '#10b981', label: 'HR (20%)' },
     { name: 'Finance', value: 15, color: '#f59e0b', label: 'Finance (15%)' },
-    { name: 'Operations', value: 10, color: '#8b5cf6', label: 'Operations (10%)' },
-    { name: 'Others', value: 10, color: '#06b6d4', label: 'Others (10%)' }
+    { name: 'Marketing', value: 12, color: '#ec4899', label: 'Marketing (12%)' },
+    { name: 'Sales', value: 8, color: '#8b5cf6', label: 'Sales (8%)' }
   ];
 
   // Custom Report Generator state

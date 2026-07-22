@@ -74,16 +74,13 @@ export const AssetProvider = ({ children }) => {
     let storedEmployees = localStorage.getItem('it_employees');
     if (!storedEmployees) {
       const generatedEmployees = [...initialEmployees];
-      const depts = ["IT", "Finance", "HR", "Marketing", "Operations", "Sales", "Legal", "Executive"];
+      const depts = ["IT", "Finance", "HR", "Marketing", "Sales"];
       const designations = {
         "IT": ["System Engineer", "Network Engineer", "Technical Support", "DevOps Engineer", "Database Admin"],
         "Finance": ["Accounts Executive", "Finance Analyst", "Auditor"],
         "HR": ["HR Executive", "Talent Acquisition", "HR Manager"],
         "Marketing": ["Marketing Manager", "SEO Specialist", "Content Writer"],
-        "Operations": ["Operations Executive", "Logistics Coordinator"],
-        "Sales": ["Sales Manager", "Account Executive"],
-        "Legal": ["Legal Counsel", "Compliance Officer"],
-        "Executive": ["VP Operations", "Chief Technology Officer"]
+        "Sales": ["Sales Manager", "Account Executive"]
       };
 
       // We need to add 118 more employees to reach 125
@@ -153,6 +150,9 @@ export const AssetProvider = ({ children }) => {
         }
         if (!emp.username) {
           emp.username = emp.email ? emp.email.split('@')[0] : emp.name.toLowerCase().replace(/[^a-z]/g, '').replace(' ', '.');
+        }
+        if (!["IT", "HR", "Marketing", "Sales", "Finance"].includes(emp.department)) {
+          emp.department = "HR";
         }
         return emp;
       });

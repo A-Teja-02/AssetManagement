@@ -77,7 +77,7 @@ const Employees = () => {
   const [formPhone, setFormPhone] = useState('');
   const [formStatus, setFormStatus] = useState('Active');
 
-  const standardDepartments = ["IT", "Finance", "HR", "Marketing", "Operations", "Sales", "Legal", "Executive"];
+  const standardDepartments = ["IT", "HR", "Marketing", "Sales", "Finance"];
 
   // Statistics calculation
   const totalEmployeesCount = employees.length;
@@ -85,7 +85,7 @@ const Employees = () => {
   const inactiveCount = employees.filter(e => e.status === 'Inactive').length;
 
   // Find unique departments list
-  const departmentsList = ['All', ...new Set(employees.map(e => e.department))];
+  const departmentsList = ['All', 'IT', 'HR', 'Marketing', 'Sales', 'Finance'];
   const departmentsCount = departmentsList.length - 1; // subtract 'All'
 
   // Filter employees
