@@ -69,6 +69,7 @@ const Employees = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
 
   // Form states
+  const [formId, setFormId] = useState('');
   const [formName, setFormName] = useState('');
   const [formDept, setFormDept] = useState('IT');
   const [customDept, setCustomDept] = useState('');
@@ -105,6 +106,7 @@ const Employees = () => {
 
   // Form handlers
   const handleOpenAddModal = () => {
+    setFormId('');
     setFormName('');
     setFormDept('IT');
     setCustomDept('');
@@ -117,8 +119,18 @@ const Employees = () => {
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
+    const targetId = formId.trim().toUpperCase();
+    
+    // Validation: Check if employee ID already exists
+    const idExists = employees.some(emp => emp.id.toLowerCase() === targetId.toLowerCase());
+    if (idExists) {
+      showToast(`Employee ID "${targetId}" already exists!`, 'error');
+      return;
+    }
+
     const finalDept = formDept === 'Other' ? (customDept.trim() || 'Other') : formDept;
     addEmployee({
+      id: targetId,
       name: formName,
       department: finalDept,
       designation: formDesig,
@@ -536,6 +548,17 @@ const Employees = () => {
             <form onSubmit={handleAddSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Employee ID *</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={formId} 
+                    onChange={e => setFormId(e.target.value)} 
+                    placeholder="e.g. EMP008"
+                    className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                  />
+                </div>
+                <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Full Name *</label>
                   <input 
                     type="text" 
@@ -643,6 +666,15 @@ const Employees = () => {
             </div>
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">Employee ID</label>
+                  <input 
+                    type="text" 
+                    disabled 
+                    value={selectedEmployee?.id || ''} 
+                    className="w-full p-2 border border-slate-100 bg-slate-50/80 rounded-xl text-xs text-slate-400 font-semibold cursor-not-allowed focus:outline-none"
+                  />
+                </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Full Name *</label>
                   <input 

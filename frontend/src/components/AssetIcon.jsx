@@ -1,13 +1,13 @@
 import React from 'react';
-import { 
-  Laptop, 
-  Monitor, 
-  Mouse, 
-  Keyboard, 
-  Headphones, 
-  Printer, 
-  Cpu, 
-  Box, 
+import {
+  Laptop,
+  Monitor,
+  Mouse,
+  Keyboard,
+  Headphones,
+  Printer,
+  Cpu,
+  Box,
   Sliders,
   Armchair,
   Table
@@ -30,15 +30,8 @@ export const getAssetIconComponent = (typeStr) => {
 
 export const AssetIconBadge = ({ type, className = "h-7 w-7", iconSize = "h-4 w-4" }) => {
   const IconComp = getAssetIconComponent(type);
-  
-  const t = (type || '').toLowerCase();
-  let theme = "bg-blue-50 text-blue-600 border-blue-200/60";
-  if (t.includes('laptop')) theme = "bg-blue-50 text-blue-600 border-blue-200/60";
-  else if (t.includes('monitor')) theme = "bg-indigo-50 text-indigo-600 border-indigo-200/60";
-  else if (t.includes('mouse') || t.includes('keyboard')) theme = "bg-slate-100 text-slate-700 border-slate-200";
-  else if (t.includes('headphone') || t.includes('headset')) theme = "bg-purple-50 text-purple-600 border-purple-200/60";
-  else if (t.includes('printer')) theme = "bg-emerald-50 text-emerald-600 border-emerald-200/60";
-  else if (t.includes('chair') || t.includes('table')) theme = "bg-amber-50 text-amber-600 border-amber-200/60";
+
+  const theme = "bg-[#f4f1ee] text-[#1E3A8A] border-[#e2deda]";
 
   return (
     <div className={`rounded-xl border flex items-center justify-center shrink-0 shadow-xs ${theme} ${className}`}>

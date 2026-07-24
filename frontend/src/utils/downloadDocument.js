@@ -67,7 +67,7 @@ export const downloadOrOpenGuidelinesPdf = (guidelines) => {
           .logo {
             font-size: 20px;
             font-weight: 800;
-            color: #2563eb;
+            color: #1E3A8A;
             letter-spacing: -0.5px;
           }
           .badge {
@@ -123,7 +123,7 @@ export const downloadOrOpenGuidelinesPdf = (guidelines) => {
           }
           .section-num {
             display: inline-block;
-            background: #2563eb;
+            background: #1E3A8A;
             color: #ffffff;
             width: 24px;
             height: 24px;

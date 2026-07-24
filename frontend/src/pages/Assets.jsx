@@ -47,8 +47,10 @@ const Assets = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [showScopeGlass, setShowScopeGlass] = useState(false);
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState(null);
   const typeDropdownRef = useRef(null);
   const scopeRef = useRef(null);
+  const formDropdownRef = useRef(null);
 
   // Outside click for dropdowns
   useEffect(() => {
@@ -58,6 +60,9 @@ const Assets = () => {
       }
       if (typeDropdownRef.current && !typeDropdownRef.current.contains(e.target)) {
         setIsTypeDropdownOpen(false);
+      }
+      if (formDropdownRef.current && !formDropdownRef.current.contains(e.target)) {
+        setActiveDropdown(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -94,11 +99,23 @@ const Assets = () => {
 
   // Form states
   const [formType, setFormType] = useState('Laptop');
+  const [customType, setCustomType] = useState('');
   const [formBrand, setFormBrand] = useState('Dell');
+  const [customBrand, setCustomBrand] = useState('');
   const [formModel, setFormModel] = useState('');
   const [formSerial, setFormSerial] = useState('');
   const [formStatus, setFormStatus] = useState('Available');
   const [formAssigned, setFormAssigned] = useState('');
+  const [formOwnership, setFormOwnership] = useState('Quadrant IT Services');
+  const [formGroup, setFormGroup] = useState('IT');
+
+  useEffect(() => {
+    if (formType === 'Other') return;
+    const matched = categoryTypes.find(c => c.name.toLowerCase() === formType.toLowerCase());
+    if (matched && matched.group) {
+      setFormGroup(matched.group);
+    }
+  }, [formType, categoryTypes]);
 
   // Statistics calculation
   const totalCount = assets.length;
@@ -153,10 +170,18 @@ const Assets = () => {
   };
 
   const handleBulkDelete = () => {
-    selectedIds.forEach(id => deleteAsset(id));
-    showToast(`Successfully deleted ${selectedIds.length} assets!`);
-    setSelectedIds([]);
-    setIsBulkDeleteOpen(false);
+    setPassAuthModal({
+      isOpen: true,
+      title: "Confirm Bulk Delete Assets",
+      actionLabel: `Delete ${selectedIds.length} Asset(s)`,
+      onSuccess: () => {
+        selectedIds.forEach(id => deleteAsset(id));
+        showToast(`Successfully deleted ${selectedIds.length} assets!`);
+        setSelectedIds([]);
+        setIsBulkDeleteOpen(false);
+        setPassAuthModal({ isOpen: false, title: '', actionLabel: '', onSuccess: null });
+      }
+    });
   };
 
   // Excel Bulk Import Handler
@@ -184,12 +209,15 @@ const Assets = () => {
         return;
       }
 
+      const ownership = row.Ownership || row.ownership || row['Asset Ownership'] || 'Quadrant IT Services';
+
       addAsset({
         type: type,
         brand: brand,
         model: model,
         serialNumber: String(serialNumber),
         status: status,
+        ownership: ownership,
         assignedTo: null,
         purchaseDate: new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
         warrantyEndDate: new Date(new Date().setFullYear(new Date().getFullYear() + 3)).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -229,22 +257,31 @@ const Assets = () => {
   // Form submit handlers
   const handleOpenAddModal = () => {
     setFormType('Laptop');
+    setCustomType('');
     setFormBrand('Dell');
+    setCustomBrand('');
     setFormModel('');
     setFormSerial('');
     setFormStatus('Available');
     setFormAssigned('');
+    setFormOwnership('Quadrant IT Services');
+    setFormGroup('IT');
+    setActiveDropdown(null);
     setIsAddModalOpen(true);
   };
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
+    const finalType = formType === 'Other' ? (customType.trim() || 'Other') : formType;
+    const finalBrand = formBrand === 'Other' ? (customBrand.trim() || 'Other') : formBrand;
     addAsset({
-      type: formType,
-      brand: formBrand,
+      type: finalType,
+      brand: finalBrand,
       model: formModel,
       serialNumber: formSerial,
       status: formStatus,
+      ownership: formOwnership,
+      group: formGroup,
       assignedTo: formStatus === 'Assigned' && formAssigned ? formAssigned : null,
       purchaseDate: new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
       warrantyEndDate: new Date(new Date().setFullYear(new Date().getFullYear() + 3)).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -256,24 +293,39 @@ const Assets = () => {
   const handleOpenEditModal = (asset, e) => {
     if (e) e.stopPropagation();
     setSelectedAsset(asset);
-    setFormType(asset.type);
-    setFormBrand(asset.brand);
+    
+    const isStandardType = categoryTypes.some(c => c.name.toLowerCase() === asset.type.toLowerCase());
+    setFormType(isStandardType ? asset.type : 'Other');
+    setCustomType(isStandardType ? '' : asset.type);
+    
+    const standardBrands = ["Dell", "Logitech", "HP", "Apple", "Samsung", "Lenovo", "Sony", "Epson", "Herman Miller", "Steelcase", "Ikea", "Godrej", "Featherlite", "Generic"];
+    const isStandardBrand = standardBrands.includes(asset.brand);
+    setFormBrand(isStandardBrand ? asset.brand : 'Other');
+    setCustomBrand(isStandardBrand ? '' : asset.brand);
+    
     setFormModel(asset.model);
     setFormSerial(asset.serialNumber);
     setFormStatus(asset.status);
     setFormAssigned(asset.assignedTo || '');
+    setFormOwnership(asset.ownership || 'Quadrant IT Services');
+    setFormGroup(asset.group || 'IT');
+    setActiveDropdown(null);
     setIsEditModalOpen(true);
   };
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
+    const finalType = formType === 'Other' ? (customType.trim() || 'Other') : formType;
+    const finalBrand = formBrand === 'Other' ? (customBrand.trim() || 'Other') : formBrand;
     updateAsset({
       ...selectedAsset,
-      type: formType,
-      brand: formBrand,
+      type: finalType,
+      brand: finalBrand,
       model: formModel,
       serialNumber: formSerial,
       status: formStatus,
+      ownership: formOwnership,
+      group: formGroup,
       assignedTo: formStatus === 'Assigned' && formAssigned ? formAssigned : null
     });
     setIsEditModalOpen(false);
@@ -318,7 +370,7 @@ const Assets = () => {
         <MetricCard icon={Laptop} title="Total Assets" value={totalCount} color="blue" linkTo="/assets" />
         <MetricCard icon={CheckCircle} title="Assigned Assets" value={assignedCount} color="green" linkTo="/assets" />
         <MetricCard icon={TrendingUp} title="Available Assets" value={availableCount} color="orange" linkTo="/assets" />
-        <MetricCard icon={Wrench} title="Under Repair" value={repairCount} color="red" linkTo="/repairs" />
+        <MetricCard icon={Wrench} title="Under Repair" value={repairCount} color="red" linkTo="/repairs" showLink />
         <MetricCard icon={Trash2} title="Disposed Assets" value={disposedCount} color="purple" linkTo="/assets" />
       </div>
 
@@ -383,40 +435,37 @@ const Assets = () => {
               )}
             </div>
 
-            {/* Apple Liquid Glass Scope Selector */}
+            {/* Custom Scope filter Dropdown */}
             <div className="relative" ref={scopeRef}>
               <button
                 type="button"
-                onClick={() => setShowScopeGlass(prev => !prev)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-slate-200/90 shadow-xs hover:bg-white text-slate-700 font-bold text-xs transition-all cursor-pointer hover:shadow-sm"
+                onClick={() => setShowScopeGlass(!showScopeGlass)}
+                className="flex items-center justify-between gap-1.5 px-3 py-1.5 border border-slate-200 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold cursor-pointer transition-all min-w-[110px]"
               >
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Scope:</span>
-                <span>{scopeFilter === 'All' ? 'All' : scopeFilter === 'Assigned' ? 'Assigned' : 'Not Assigned'}</span>
+                <span>{scopeFilter === 'All' ? 'All Scopes' : scopeFilter === 'Assigned' ? 'Assigned' : 'Not Assigned'}</span>
                 <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${showScopeGlass ? 'rotate-180' : ''}`} />
               </button>
-
+              
               {showScopeGlass && (
-                <div className="absolute right-0 mt-2 w-48 bg-white/90 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-xl shadow-slate-900/10 p-1.5 z-40 space-y-1 animate-scale-in">
+                <div className="absolute top-full right-0 mt-1.5 w-48 bg-white border border-slate-200/80 rounded-2xl shadow-xl py-1 z-30 animate-scale-in text-xs font-semibold text-slate-700">
                   {[
-                    { label: 'All Scopes', value: 'All', desc: 'Show all assets' },
-                    { label: 'Assigned', value: 'Assigned', desc: 'Only assigned assets' },
-                    { label: 'Not Assigned', value: 'Not Assigned', desc: 'Available & unassigned assets' }
+                    { label: 'All Scopes', value: 'All' },
+                    { label: 'Assigned', value: 'Assigned' },
+                    { label: 'Not Assigned', value: 'Not Assigned' }
                   ].map(item => (
                     <button
                       key={item.value}
                       type="button"
-                      onClick={() => { setScopeFilter(item.value); setShowScopeGlass(false); }}
-                      className={`w-full text-left p-2 rounded-xl transition-all flex items-center justify-between text-xs cursor-pointer ${
-                        scopeFilter === item.value 
-                          ? 'bg-blue-600 text-white font-bold shadow-xs' 
-                          : 'hover:bg-slate-100/80 text-slate-700 font-semibold'
+                      onClick={() => {
+                        setScopeFilter(item.value);
+                        setShowScopeGlass(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                        scopeFilter === item.value ? 'bg-blue-50/50 text-blue-600 font-bold' : ''
                       }`}
                     >
-                      <div>
-                        <p className="leading-tight">{item.label}</p>
-                        <p className={`text-[9px] ${scopeFilter === item.value ? 'text-blue-100' : 'text-slate-400'}`}>{item.desc}</p>
-                      </div>
-                      {scopeFilter === item.value && <Check className="h-3.5 w-3.5 shrink-0" />}
+                      <span>{item.label}</span>
+                      {scopeFilter === item.value && <Check className="h-3.5 w-3.5 text-blue-600" />}
                     </button>
                   ))}
                 </div>
@@ -580,10 +629,10 @@ const Assets = () => {
                       ) : scopeFilter === 'Not Assigned' ? (
                         <>
                           <td className="py-2.5 px-3">
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold whitespace-nowrap inline-block text-center ${
-                              asset.status === 'Available' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                              asset.status === 'Under Repair' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                              'bg-slate-100 text-slate-600'
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold whitespace-nowrap inline-block text-center border ${
+                              asset.status === 'Available' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/60' :
+                              asset.status === 'Under Repair' ? 'bg-rose-50 text-rose-600 border-rose-100/60' :
+                              'bg-slate-900 text-slate-50 border-slate-900'
                             }`}>
                               {asset.status}
                             </span>
@@ -593,11 +642,11 @@ const Assets = () => {
                       ) : (
                         <>
                           <td className="py-2.5 px-3">
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold whitespace-nowrap inline-block text-center ${
-                              asset.status === 'Assigned' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                              asset.status === 'Available' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                              asset.status === 'Under Repair' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                              'bg-slate-100 text-slate-600'
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold whitespace-nowrap inline-block text-center border ${
+                              asset.status === 'Assigned' ? 'bg-blue-50 text-[#1E3A8A] border-blue-200/60' :
+                              asset.status === 'Available' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/60' :
+                              asset.status === 'Under Repair' ? 'bg-rose-50 text-rose-600 border-rose-100/60' :
+                              'bg-slate-900 text-slate-50 border-slate-900'
                             }`}>
                               {asset.status}
                             </span>
@@ -667,47 +716,101 @@ const Assets = () => {
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsAddModalOpen(false)} />
-          <div className="relative bg-white border border-slate-200 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden p-6 z-10">
+          <div className="relative bg-white border border-slate-200 w-full max-w-lg rounded-3xl shadow-2xl p-6 z-10">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
               <h3 className="font-bold text-slate-800">Add New Asset</h3>
               <button onClick={() => setIsAddModalOpen(false)} className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={handleAddSubmit} className="space-y-4">
+            <form ref={formDropdownRef} onSubmit={handleAddSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                {/* Asset Type Dropdown */}
+                <div className="relative">
                   <label className="block text-xs font-bold text-slate-500 mb-1">Asset Type *</label>
-                  <select 
-                    value={formType} 
-                    onChange={e => setFormType(e.target.value)}
-                    className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                  <button
+                    type="button"
+                    onClick={() => setActiveDropdown(activeDropdown === 'type' ? null : 'type')}
+                    className="w-full flex items-center justify-between p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-left transition-all"
                   >
-                    <optgroup label="IT Assets">
-                      {itCategoryList.map(cat => (
-                        <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
+                    <span>{formType === 'Other' ? 'Other (Custom Type)' : formType}</span>
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${activeDropdown === 'type' ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {activeDropdown === 'type' && (
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-30 max-h-48 overflow-y-auto text-xs font-semibold text-slate-700">
+                      {[...categoryTypes.map(c => c.name), "Other"].map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => {
+                            setFormType(opt);
+                            setActiveDropdown(null);
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                            formType === opt ? 'bg-blue-50/50 text-blue-600 font-bold' : ''
+                          }`}
+                        >
+                          <span>{opt === 'Other' ? 'Other (Custom Type)' : opt}</span>
+                          {formType === opt && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                        </button>
                       ))}
-                    </optgroup>
-                    {nonItCategoryList.length > 0 && (
-                      <optgroup label="Non-IT Assets">
-                        {nonItCategoryList.map(cat => (
-                          <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
-                        ))}
-                      </optgroup>
-                    )}
-                  </select>
+                    </div>
+                  )}
+                  {formType === 'Other' && (
+                    <input 
+                      type="text" 
+                      required 
+                      value={customType} 
+                      onChange={e => setCustomType(e.target.value)} 
+                      placeholder="Enter custom asset type..."
+                      className="w-full mt-2 p-2 border border-blue-200 bg-blue-50/30 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none font-semibold text-blue-900 animate-fade-in"
+                    />
+                  )}
                 </div>
-                <div>
+
+                {/* Brand Dropdown */}
+                <div className="relative">
                   <label className="block text-xs font-bold text-slate-500 mb-1">Brand *</label>
-                  <select 
-                    value={formBrand} 
-                    onChange={e => setFormBrand(e.target.value)}
-                    className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                  <button
+                    type="button"
+                    onClick={() => setActiveDropdown(activeDropdown === 'brand' ? null : 'brand')}
+                    className="w-full flex items-center justify-between p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-left transition-all"
                   >
-                    {["Dell", "Logitech", "HP", "Apple", "Samsung", "Lenovo", "Sony", "Epson", "Herman Miller", "Steelcase", "Ikea", "Godrej", "Featherlite", "Generic"].map(b => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
-                  </select>
+                    <span>{formBrand === 'Other' ? 'Other (Custom Brand)' : formBrand}</span>
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${activeDropdown === 'brand' ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {activeDropdown === 'brand' && (
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-30 max-h-48 overflow-y-auto text-xs font-semibold text-slate-700">
+                      {["Dell", "Logitech", "HP", "Apple", "Samsung", "Lenovo", "Sony", "Epson", "Herman Miller", "Steelcase", "Ikea", "Godrej", "Featherlite", "Generic", "Other"].map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => {
+                            setFormBrand(opt);
+                            setActiveDropdown(null);
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                            formBrand === opt ? 'bg-blue-50/50 text-blue-600 font-bold' : ''
+                          }`}
+                        >
+                          <span>{opt === 'Other' ? 'Other (Custom Brand)' : opt}</span>
+                          {formBrand === opt && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {formBrand === 'Other' && (
+                    <input 
+                      type="text" 
+                      required 
+                      value={customBrand} 
+                      onChange={e => setCustomBrand(e.target.value)} 
+                      placeholder="Enter custom brand name..."
+                      className="w-full mt-2 p-2 border border-blue-200 bg-blue-50/30 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none font-semibold text-blue-900 animate-fade-in"
+                    />
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -735,33 +838,147 @@ const Assets = () => {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Initial Status</label>
-                  <select 
-                    value={formStatus} 
-                    onChange={e => setFormStatus(e.target.value)}
-                    className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                {/* Ownership Dropdown */}
+                <div className="relative">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Asset Ownership *</label>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDropdown(activeDropdown === 'ownership' ? null : 'ownership')}
+                    className="w-full flex items-center justify-between p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-left transition-all"
                   >
-                    <option value="Available">Available</option>
-                    <option value="Assigned">Assigned</option>
-                    <option value="Under Repair">Under Repair</option>
-                    <option value="Disposed">Disposed</option>
-                  </select>
-                </div>
-                {formStatus === 'Assigned' && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Assign To Employee *</label>
-                    <select 
-                      required 
-                      value={formAssigned} 
-                      onChange={e => setFormAssigned(e.target.value)}
-                      className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
-                    >
-                      <option value="">Select Employee</option>
-                      {employees.map(emp => (
-                        <option key={emp.id} value={emp.id}>{emp.name} ({emp.id})</option>
+                    <span>{formOwnership}</span>
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${activeDropdown === 'ownership' ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {activeDropdown === 'ownership' && (
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-30 text-xs font-semibold text-slate-700">
+                      {["Quadrant IT Services", "DSV", "DHL"].map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => {
+                            setFormOwnership(opt);
+                            setActiveDropdown(null);
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                            formOwnership === opt ? 'bg-blue-50/50 text-blue-600 font-bold' : ''
+                          }`}
+                        >
+                          <span>{opt}</span>
+                          {formOwnership === opt && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                        </button>
                       ))}
-                    </select>
+                    </div>
+                  )}
+                </div>
+                {/* Asset Class Dropdown */}
+                <div className="relative">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Asset Class *</label>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDropdown(activeDropdown === 'group' ? null : 'group')}
+                    className="w-full flex items-center justify-between p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-left transition-all"
+                  >
+                    <span>{formGroup === 'IT' ? 'IT Asset' : 'Non-IT Asset'}</span>
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${activeDropdown === 'group' ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {activeDropdown === 'group' && (
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-30 text-xs font-semibold text-slate-700">
+                      {[
+                        { label: 'IT Asset', value: 'IT' },
+                        { label: 'Non-IT Asset', value: 'Non-IT' }
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setFormGroup(opt.value);
+                            setActiveDropdown(null);
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                            formGroup === opt.value ? 'bg-blue-50/50 text-blue-600 font-bold' : ''
+                          }`}
+                        >
+                          <span>{opt.label}</span>
+                          {formGroup === opt.value && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Initial Status Dropdown */}
+                <div className="relative">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Initial Status</label>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDropdown(activeDropdown === 'status' ? null : 'status')}
+                    className="w-full flex items-center justify-between p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-left transition-all"
+                  >
+                    <span>{formStatus}</span>
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${activeDropdown === 'status' ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {activeDropdown === 'status' && (
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-30 text-xs font-semibold text-slate-700">
+                      {["Available", "Assigned", "Under Repair", "Disposed"].map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => {
+                            setFormStatus(opt);
+                            setActiveDropdown(null);
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                            formStatus === opt ? 'bg-blue-50/50 text-blue-600 font-bold' : ''
+                          }`}
+                        >
+                          <span>{opt}</span>
+                          {formStatus === opt && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Assign to Employee Dropdown */}
+                {formStatus === 'Assigned' && (
+                  <div className="relative">
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Assign To Employee *</label>
+                    <button
+                      type="button"
+                      onClick={() => setActiveDropdown(activeDropdown === 'assigned' ? null : 'assigned')}
+                      className="w-full flex items-center justify-between p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-left transition-all"
+                    >
+                      <span>
+                        {formAssigned 
+                          ? `${employees.find(emp => emp.id === formAssigned)?.name || formAssigned} (${formAssigned})`
+                          : 'Select Employee'}
+                      </span>
+                      <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${activeDropdown === 'assigned' ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {activeDropdown === 'assigned' && (
+                      <div className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-30 max-h-48 overflow-y-auto text-xs font-semibold text-slate-700">
+                        {employees.map(emp => (
+                          <button
+                            key={emp.id}
+                            type="button"
+                            onClick={() => {
+                              setFormAssigned(emp.id);
+                              setActiveDropdown(null);
+                            }}
+                            className={`w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                              formAssigned === emp.id ? 'bg-blue-50/50 text-blue-600 font-bold' : ''
+                            }`}
+                          >
+                            <span>{emp.name} ({emp.id})</span>
+                            {formAssigned === emp.id && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -782,47 +999,101 @@ const Assets = () => {
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
-          <div className="relative bg-white border border-slate-200 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden p-6 z-10">
+          <div className="relative bg-white border border-slate-200 w-full max-w-lg rounded-3xl shadow-2xl p-6 z-10">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
               <h3 className="font-bold text-slate-800">Edit Asset {selectedAsset?.id}</h3>
               <button onClick={() => setIsEditModalOpen(false)} className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={handleEditSubmit} className="space-y-4">
+            <form ref={formDropdownRef} onSubmit={handleEditSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                {/* Asset Type Dropdown */}
+                <div className="relative">
                   <label className="block text-xs font-bold text-slate-500 mb-1">Asset Type *</label>
-                  <select 
-                    value={formType} 
-                    onChange={e => setFormType(e.target.value)}
-                    className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                  <button
+                    type="button"
+                    onClick={() => setActiveDropdown(activeDropdown === 'type' ? null : 'type')}
+                    className="w-full flex items-center justify-between p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-left transition-all"
                   >
-                    <optgroup label="IT Assets">
-                      {itCategoryList.map(cat => (
-                        <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
+                    <span>{formType === 'Other' ? 'Other (Custom Type)' : formType}</span>
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${activeDropdown === 'type' ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {activeDropdown === 'type' && (
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-30 max-h-48 overflow-y-auto text-xs font-semibold text-slate-700">
+                      {[...categoryTypes.map(c => c.name), "Other"].map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => {
+                            setFormType(opt);
+                            setActiveDropdown(null);
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                            formType === opt ? 'bg-blue-50/50 text-blue-600 font-bold' : ''
+                          }`}
+                        >
+                          <span>{opt === 'Other' ? 'Other (Custom Type)' : opt}</span>
+                          {formType === opt && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                        </button>
                       ))}
-                    </optgroup>
-                    {nonItCategoryList.length > 0 && (
-                      <optgroup label="Non-IT Assets">
-                        {nonItCategoryList.map(cat => (
-                          <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
-                        ))}
-                      </optgroup>
-                    )}
-                  </select>
+                    </div>
+                  )}
+                  {formType === 'Other' && (
+                    <input 
+                      type="text" 
+                      required 
+                      value={customType} 
+                      onChange={e => setCustomType(e.target.value)} 
+                      placeholder="Enter custom asset type..."
+                      className="w-full mt-2 p-2 border border-blue-200 bg-blue-50/30 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none font-semibold text-blue-900 animate-fade-in"
+                    />
+                  )}
                 </div>
-                <div>
+
+                {/* Brand Dropdown */}
+                <div className="relative">
                   <label className="block text-xs font-bold text-slate-500 mb-1">Brand *</label>
-                  <select 
-                    value={formBrand} 
-                    onChange={e => setFormBrand(e.target.value)}
-                    className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                  <button
+                    type="button"
+                    onClick={() => setActiveDropdown(activeDropdown === 'brand' ? null : 'brand')}
+                    className="w-full flex items-center justify-between p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-left transition-all"
                   >
-                    {["Dell", "Logitech", "HP", "Apple", "Samsung", "Lenovo", "Sony", "Epson", "Herman Miller", "Steelcase", "Ikea", "Godrej", "Featherlite", "Generic"].map(b => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
-                  </select>
+                    <span>{formBrand === 'Other' ? 'Other (Custom Brand)' : formBrand}</span>
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${activeDropdown === 'brand' ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {activeDropdown === 'brand' && (
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-30 max-h-48 overflow-y-auto text-xs font-semibold text-slate-700">
+                      {["Dell", "Logitech", "HP", "Apple", "Samsung", "Lenovo", "Sony", "Epson", "Herman Miller", "Steelcase", "Ikea", "Godrej", "Featherlite", "Generic", "Other"].map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => {
+                            setFormBrand(opt);
+                            setActiveDropdown(null);
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                            formBrand === opt ? 'bg-blue-50/50 text-blue-600 font-bold' : ''
+                          }`}
+                        >
+                          <span>{opt === 'Other' ? 'Other (Custom Brand)' : opt}</span>
+                          {formBrand === opt && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {formBrand === 'Other' && (
+                    <input 
+                      type="text" 
+                      required 
+                      value={customBrand} 
+                      onChange={e => setCustomBrand(e.target.value)} 
+                      placeholder="Enter custom brand name..."
+                      className="w-full mt-2 p-2 border border-blue-200 bg-blue-50/30 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none font-semibold text-blue-900 animate-fade-in"
+                    />
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -848,33 +1119,147 @@ const Assets = () => {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Status</label>
-                  <select 
-                    value={formStatus} 
-                    onChange={e => setFormStatus(e.target.value)}
-                    className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                {/* Ownership Dropdown */}
+                <div className="relative">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Asset Ownership *</label>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDropdown(activeDropdown === 'ownership' ? null : 'ownership')}
+                    className="w-full flex items-center justify-between p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-left transition-all"
                   >
-                    <option value="Available">Available</option>
-                    <option value="Assigned">Assigned</option>
-                    <option value="Under Repair">Under Repair</option>
-                    <option value="Disposed">Disposed</option>
-                  </select>
-                </div>
-                {formStatus === 'Assigned' && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Assign To Employee *</label>
-                    <select 
-                      required 
-                      value={formAssigned} 
-                      onChange={e => setFormAssigned(e.target.value)}
-                      className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
-                    >
-                      <option value="">Select Employee</option>
-                      {employees.map(emp => (
-                        <option key={emp.id} value={emp.id}>{emp.name} ({emp.id})</option>
+                    <span>{formOwnership}</span>
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${activeDropdown === 'ownership' ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {activeDropdown === 'ownership' && (
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-30 text-xs font-semibold text-slate-700">
+                      {["Quadrant IT Services", "DSV", "DHL"].map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => {
+                            setFormOwnership(opt);
+                            setActiveDropdown(null);
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                            formOwnership === opt ? 'bg-blue-50/50 text-blue-600 font-bold' : ''
+                          }`}
+                        >
+                          <span>{opt}</span>
+                          {formOwnership === opt && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                        </button>
                       ))}
-                    </select>
+                    </div>
+                  )}
+                </div>
+                {/* Asset Class Dropdown */}
+                <div className="relative">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Asset Class *</label>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDropdown(activeDropdown === 'group' ? null : 'group')}
+                    className="w-full flex items-center justify-between p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-left transition-all"
+                  >
+                    <span>{formGroup === 'IT' ? 'IT Asset' : 'Non-IT Asset'}</span>
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${activeDropdown === 'group' ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {activeDropdown === 'group' && (
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-30 text-xs font-semibold text-slate-700">
+                      {[
+                        { label: 'IT Asset', value: 'IT' },
+                        { label: 'Non-IT Asset', value: 'Non-IT' }
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setFormGroup(opt.value);
+                            setActiveDropdown(null);
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                            formGroup === opt.value ? 'bg-blue-50/50 text-blue-600 font-bold' : ''
+                          }`}
+                        >
+                          <span>{opt.label}</span>
+                          {formGroup === opt.value && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Initial Status Dropdown */}
+                <div className="relative">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Status</label>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDropdown(activeDropdown === 'status' ? null : 'status')}
+                    className="w-full flex items-center justify-between p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-left transition-all"
+                  >
+                    <span>{formStatus}</span>
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${activeDropdown === 'status' ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {activeDropdown === 'status' && (
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-30 text-xs font-semibold text-slate-700">
+                      {["Available", "Assigned", "Under Repair", "Disposed"].map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => {
+                            setFormStatus(opt);
+                            setActiveDropdown(null);
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                            formStatus === opt ? 'bg-blue-50/50 text-blue-600 font-bold' : ''
+                          }`}
+                        >
+                          <span>{opt}</span>
+                          {formStatus === opt && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Assign to Employee Dropdown */}
+                {formStatus === 'Assigned' && (
+                  <div className="relative">
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Assign To Employee *</label>
+                    <button
+                      type="button"
+                      onClick={() => setActiveDropdown(activeDropdown === 'assigned' ? null : 'assigned')}
+                      className="w-full flex items-center justify-between p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-left transition-all"
+                    >
+                      <span>
+                        {formAssigned 
+                          ? `${employees.find(emp => emp.id === formAssigned)?.name || formAssigned} (${formAssigned})`
+                          : 'Select Employee'}
+                      </span>
+                      <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${activeDropdown === 'assigned' ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {activeDropdown === 'assigned' && (
+                      <div className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-30 max-h-48 overflow-y-auto text-xs font-semibold text-slate-700">
+                        {employees.map(emp => (
+                          <button
+                            key={emp.id}
+                            type="button"
+                            onClick={() => {
+                              setFormAssigned(emp.id);
+                              setActiveDropdown(null);
+                            }}
+                            className={`w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                              formAssigned === emp.id ? 'bg-blue-50/50 text-blue-600 font-bold' : ''
+                            }`}
+                          >
+                            <span>{emp.name} ({emp.id})</span>
+                            {formAssigned === emp.id && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -914,11 +1299,11 @@ const Assets = () => {
               </div>
               <div className="flex justify-between border-b border-slate-50 pb-2">
                 <span className="font-semibold text-slate-400">Status</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                  selectedAsset?.status === 'Assigned' ? 'bg-emerald-50 text-emerald-600' :
-                  selectedAsset?.status === 'Available' ? 'bg-blue-50 text-blue-600' :
-                  selectedAsset?.status === 'Under Repair' ? 'bg-amber-50 text-amber-600' :
-                  'bg-slate-100 text-slate-600'
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                  selectedAsset?.status === 'Assigned' ? 'bg-blue-50 text-[#1E3A8A] border-blue-200/60' :
+                  selectedAsset?.status === 'Available' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/60' :
+                  selectedAsset?.status === 'Under Repair' ? 'bg-rose-50 text-rose-600 border-rose-100/60' :
+                  'bg-slate-900 text-slate-50 border-slate-900'
                 }`}>{selectedAsset?.status}</span>
               </div>
               <div className="flex justify-between border-b border-slate-50 pb-2">

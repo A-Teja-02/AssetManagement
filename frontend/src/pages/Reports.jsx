@@ -1,17 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Laptop, 
-  CheckCircle, 
+import {
+  Laptop,
+  CheckCircle,
   CheckCircle2,
   Clock,
   Ticket,
-  TrendingUp, 
-  Wrench, 
-  Trash2, 
-  Calendar, 
-  Filter, 
-  FileText, 
-  FileSpreadsheet, 
+  TrendingUp,
+  Wrench,
+  Trash2,
+  Calendar,
+  Filter,
+  FileText,
+  FileSpreadsheet,
   ChevronRight,
   ChevronDown,
   Check,
@@ -26,16 +26,16 @@ import {
   Layers,
   CheckCircle2 as VerifiedBadge
 } from 'lucide-react';
-import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  ResponsiveContainer 
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer
 } from 'recharts';
 import { useAssetManager } from '../hooks/useAssetManager';
 import MetricCard from '../components/MetricCard';
@@ -137,7 +137,7 @@ const Reports = () => {
 
   // 3. Chart Data: Assets by Department Donut
   const deptChartData = [
-    { name: 'IT', value: 45, color: '#2563eb', label: 'IT (45%)' },
+    { name: 'IT', value: 45, color: '#1E3A8A', label: 'IT (45%)' },
     { name: 'HR', value: 20, color: '#10b981', label: 'HR (20%)' },
     { name: 'Finance', value: 15, color: '#f59e0b', label: 'Finance (15%)' },
     { name: 'Marketing', value: 12, color: '#ec4899', label: 'Marketing (12%)' },
@@ -351,7 +351,7 @@ const Reports = () => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `IT_Report_${reportType.toUpperCase()}_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute('download', `IT_Report_${reportType.toUpperCase()}_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -389,11 +389,11 @@ const Reports = () => {
 
       {/* KPI Cards: Tickets & Assets Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-        <MetricCard icon={Ticket} title="Number of Tickets" value={totalTickets} color="blue" linkTo="/repairs" subtext="Total raised requests" />
-        <MetricCard icon={CheckCircle2} title="Resolved Tickets" value={resolvedTickets} color="green" linkTo="/repairs" subtext={`${Math.round((resolvedTickets / (totalTickets || 1)) * 100)}% completed`} />
-        <MetricCard icon={Clock} title="Pending Tickets" value={pendingTickets} color="orange" linkTo="/repairs" subtext="In progress / open" />
-        <MetricCard icon={Laptop} title="Total Assets" value={total} color="purple" linkTo="/assets" subtext="Tracked inventory" />
-        <MetricCard icon={TrendingUp} title="Assigned Assets" value={assigned} color="teal" linkTo="/assets" subtext={`${assignedPct}% assigned`} />
+        <MetricCard icon={Ticket} title="Number of Tickets" value={totalTickets} color="blue" linkTo="/repairs" showLink />
+        <MetricCard icon={CheckCircle2} title="Resolved Tickets" value={resolvedTickets} color="green" linkTo="/repairs" showLink />
+        <MetricCard icon={Clock} title="Pending Tickets" value={pendingTickets} color="orange" linkTo="/repairs" showLink />
+        <MetricCard icon={Laptop} title="Total Assets" value={total} color="purple" linkTo="/assets" showLink />
+        <MetricCard icon={TrendingUp} title="Assigned Assets" value={assigned} color="teal" linkTo="/assets" showLink />
       </div>
 
       {/* Official Asset Guidelines PDF Management Card */}
@@ -572,20 +572,18 @@ const Reports = () => {
             </h3>
             <p className="text-xs text-slate-400 font-semibold mt-0.5">Click any report to view & generate details on the right</p>
           </div>
-          
+
           <div className="divide-y divide-slate-100 flex-1 flex flex-col justify-center my-2">
             {reportsList.map((rep, idx) => (
-              <div 
-                key={idx} 
-                className={`py-3 flex items-center justify-between gap-3 hover:bg-slate-50/80 rounded-xl px-2.5 transition-all cursor-pointer group ${
-                  reportType === rep.typeId ? 'bg-blue-50/80 font-bold border border-blue-100/80' : ''
-                }`}
+              <div
+                key={idx}
+                className={`py-3 flex items-center justify-between gap-3 hover:bg-slate-50/80 rounded-xl px-2.5 transition-all cursor-pointer group ${reportType === rep.typeId ? 'bg-blue-50/80 font-bold border border-blue-100/80' : ''
+                  }`}
                 onClick={() => setReportType(rep.typeId)}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`p-2 rounded-xl shrink-0 transition-all ${
-                    reportType === rep.typeId ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-50 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600'
-                  }`}>
+                  <div className={`p-2 rounded-xl shrink-0 transition-all ${reportType === rep.typeId ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-50 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600'
+                    }`}>
                     <rep.icon className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
@@ -593,9 +591,8 @@ const Reports = () => {
                     <p className="text-[9px] text-slate-400 truncate mt-0.5">{rep.desc}</p>
                   </div>
                 </div>
-                <ChevronRight className={`h-4 w-4 shrink-0 transition-all ${
-                  reportType === rep.typeId ? 'text-blue-600 translate-x-0.5' : 'text-slate-300 group-hover:text-blue-500'
-                }`} />
+                <ChevronRight className={`h-4 w-4 shrink-0 transition-all ${reportType === rep.typeId ? 'text-blue-600 translate-x-0.5' : 'text-slate-300 group-hover:text-blue-500'
+                  }`} />
               </div>
             ))}
           </div>
@@ -613,7 +610,7 @@ const Reports = () => {
               </h3>
               <p className="text-xs text-slate-400 font-semibold mt-0.5">Filter and view detailed asset data for the selected report</p>
             </div>
-            
+
             <button
               onClick={() => handleExportActiveReport('CSV')}
               className="flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer shrink-0"
@@ -632,7 +629,7 @@ const Reports = () => {
               <div className="relative w-full sm:w-auto" ref={catDropdownRef}>
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-slate-500 whitespace-nowrap">Category:</span>
-                  <div 
+                  <div
                     onClick={() => setIsCatDropdownOpen(prev => !prev)}
                     className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all cursor-pointer min-w-[170px]"
                   >
@@ -673,11 +670,10 @@ const Reports = () => {
                             setIsCatTyping(false);
                             setIsCatDropdownOpen(false);
                           }}
-                          className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                            selectedCategoryFilter === cat 
-                              ? 'bg-blue-50 text-blue-600 font-bold' 
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${selectedCategoryFilter === cat
+                              ? 'bg-blue-50 text-blue-600 font-bold'
                               : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                          }`}
+                            }`}
                         >
                           <span>{cat === 'All' ? 'All Categories' : cat}</span>
                           {selectedCategoryFilter === cat && <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
@@ -694,7 +690,7 @@ const Reports = () => {
               <div className="relative w-full sm:w-auto" ref={deptDropdownRef}>
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-slate-500 whitespace-nowrap">Department:</span>
-                  <div 
+                  <div
                     onClick={() => setIsDeptDropdownOpen(prev => !prev)}
                     className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all cursor-pointer min-w-[180px]"
                   >
@@ -738,11 +734,10 @@ const Reports = () => {
                             setIsDeptTyping(false);
                             setIsDeptDropdownOpen(false);
                           }}
-                          className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                            selectedDeptFilter === dept 
-                              ? 'bg-blue-50 text-blue-600 font-bold' 
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${selectedDeptFilter === dept
+                              ? 'bg-blue-50 text-blue-600 font-bold'
                               : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                          }`}
+                            }`}
                         >
                           <span>{dept === 'All' ? 'All Departments' : dept}</span>
                           {selectedDeptFilter === dept && <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
@@ -759,7 +754,7 @@ const Reports = () => {
               <div className="relative w-full sm:w-auto" ref={empDropdownRef}>
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-slate-500 whitespace-nowrap">Employee:</span>
-                  <div 
+                  <div
                     onClick={() => setIsEmpDropdownOpen(prev => !prev)}
                     className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all cursor-pointer min-w-[210px]"
                   >
@@ -796,9 +791,8 @@ const Reports = () => {
                         setIsEmpTyping(false);
                         setIsEmpDropdownOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer border-b border-slate-100 ${
-                        selectedEmpFilter === 'All' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-700 hover:bg-slate-50'
-                      }`}
+                      className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer border-b border-slate-100 ${selectedEmpFilter === 'All' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                        }`}
                     >
                       <span>All Assigned Employees</span>
                       {selectedEmpFilter === 'All' && <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
@@ -819,11 +813,10 @@ const Reports = () => {
                             setIsEmpTyping(false);
                             setIsEmpDropdownOpen(false);
                           }}
-                          className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                            selectedEmpFilter === emp.id 
-                              ? 'bg-blue-50 text-blue-600 font-bold' 
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${selectedEmpFilter === emp.id
+                              ? 'bg-blue-50 text-blue-600 font-bold'
                               : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <Avatar name={emp.name} className="h-5 w-5 rounded-full" textSize="text-[7px]" />
@@ -847,7 +840,7 @@ const Reports = () => {
               <div className="relative w-full sm:w-auto" ref={ownershipDropdownRef}>
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-slate-500 whitespace-nowrap">Entity:</span>
-                  <div 
+                  <div
                     onClick={() => setIsOwnershipDropdownOpen(prev => !prev)}
                     className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all cursor-pointer min-w-[210px]"
                   >
@@ -891,11 +884,10 @@ const Reports = () => {
                             setIsOwnershipTyping(false);
                             setIsOwnershipDropdownOpen(false);
                           }}
-                          className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                            selectedOwnershipFilter === ent 
-                              ? 'bg-blue-50 text-blue-600 font-bold' 
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${selectedOwnershipFilter === ent
+                              ? 'bg-blue-50 text-blue-600 font-bold'
                               : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                          }`}
+                            }`}
                         >
                           <span>{ent === 'All' ? 'All Ownership Entities' : ent}</span>
                           {selectedOwnershipFilter === ent && <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
@@ -983,12 +975,11 @@ const Reports = () => {
                           {asset.ownerEntity || 'Quadrant IT Services Asset'}
                         </td>
                         <td className="py-2.5 px-3 text-center">
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold whitespace-nowrap ${
-                            asset.status === 'Assigned' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                            asset.status === 'Available' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                            asset.status === 'Under Repair' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                            'bg-slate-100 text-slate-600'
-                          }`}>
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold whitespace-nowrap border ${asset.status === 'Assigned' ? 'bg-blue-50 text-[#1E3A8A] border-blue-200/60' :
+                              asset.status === 'Available' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/60' :
+                                asset.status === 'Under Repair' ? 'bg-rose-50 text-rose-600 border-rose-100/60' :
+                                  'bg-slate-900 text-slate-50 border-slate-900'
+                            }`}>
                             {asset.status}
                           </span>
                         </td>
@@ -1012,7 +1003,7 @@ const Reports = () => {
                 <FileText className="h-5 w-5 text-red-600" />
                 <h3 className="font-extrabold text-slate-800 text-base">Post Asset Policy Guidelines PDF</h3>
               </div>
-              <button 
+              <button
                 onClick={() => setIsPdfModalOpen(false)}
                 className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
               >
@@ -1058,8 +1049,8 @@ const Reports = () => {
               <div>
                 <label className="block font-bold text-slate-700 mb-1.5">Upload PDF Document *</label>
                 <div className="border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-2xl p-4 text-center bg-slate-50/50 hover:bg-white transition-all cursor-pointer relative">
-                  <input 
-                    type="file" 
+                  <input
+                    type="file"
                     accept=".pdf,.doc,.docx"
                     onChange={handleFileChange}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"

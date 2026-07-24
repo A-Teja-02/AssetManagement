@@ -70,6 +70,15 @@ export const AssetProvider = ({ children }) => {
   });
 
   useEffect(() => {
+    // 0. Force clean DB migration to format asset IDs by ownership prefix (QITS/DSV/DHL)
+    const DB_VERSION = "v3_asset_prefix_migration";
+    if (localStorage.getItem('it_db_version') !== DB_VERSION) {
+      localStorage.removeItem('it_assets');
+      localStorage.removeItem('it_repairs');
+      localStorage.removeItem('it_categories');
+      localStorage.setItem('it_db_version', DB_VERSION);
+    }
+
     // 1. Initialize Employees (Target: 125 total; 110 Active, 15 Inactive)
     let storedEmployees = localStorage.getItem('it_employees');
     if (!storedEmployees) {
@@ -133,12 +142,15 @@ export const AssetProvider = ({ children }) => {
       localStorage.setItem('it_employees', JSON.stringify(generatedEmployees));
       storedEmployees = JSON.stringify(generatedEmployees);
     }
-    let parsedEmployees = JSON.parse(storedEmployees)
-      .filter(emp => {
-        if (!emp) return false;
-        const isJagadishTest = emp.name?.toLowerCase() === 'jagadish' || emp.id === 'QEMP128' || emp.email === 'rakesh@com';
-        return !isJagadishTest;
-      })
+    let parsedEmployees = JSON.parse(storedEmployees);
+    const seenIds = {};
+    parsedEmployees = parsedEmployees.filter(emp => {
+      if (!emp || !emp.id) return false;
+      if (seenIds[emp.id]) return false;
+      seenIds[emp.id] = true;
+      const isJagadishTest = emp.name?.toLowerCase() === 'jagadish' || emp.id === 'QEMP128' || emp.email === 'rakesh@com';
+      return !isJagadishTest;
+    })
       .map(emp => {
         if (emp.id === 'EMP001') {
           return {
@@ -179,7 +191,7 @@ export const AssetProvider = ({ children }) => {
     // 2. Initialize Assets (Target: 250 total; 180 Assigned, 50 Available, 20 Under Repair, 10 Disposed/Retired)
     let storedAssets = localStorage.getItem('it_assets');
     if (!storedAssets) {
-      const generatedAssets = [...initialAssets];
+      const generatedAssets = [];
       const types = ["Laptop", "Monitor", "Mouse", "Keyboard", "Headset", "Printer", "Docking Station"];
       const brands = {
         "Laptop": ["Dell", "HP", "Apple", "Lenovo"],
@@ -209,52 +221,41 @@ export const AssetProvider = ({ children }) => {
         "Docking Station": "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=80&h=80&fit=crop"
       };
 
-      // Fill in remaining assets up to 250
-      // Status breakdown:
-      // - 180 Assigned (indices 1 to 180)
-      // - 50 Available (indices 181 to 230)
-      // - 20 Under Repair (indices 231 to 250)
-      // Wait, 10 are Disposed/Retired. So let's adjust indices:
-      // - Assigned: 1 to 180
-      // - Available: 181 to 230
-      // - Under Repair: 231 to 240 (or 20)
-      // Let's make it exactly:
-      // 1 to 180: Assigned
-      // 181 to 230: Available
-      // 231 to 240: Under Repair
-      // 241 to 250: Retired
-      // Let's verify counts: 180 Assigned + 50 Available + 10 Under Repair + 10 Retired = 250 total. Wait, repair is 20 in mockup.
-      // Ah! Total = 180 Assigned + 50 Available + 20 Under Repair + 10 Retired/Disposed = 260 total?
-      // Wait! Let's check mockup: Total Assets is 250.
-      // Breakdown: Assigned = 180. Available = 50. Under Repair = 20. Disposed/Retired = 10?
-      // Wait, 180 + 50 + 20 + 10 = 260!
-      // But in the mockup:
-      // Donut chart shows:
-      // Assigned: 180 (72% of 250)
-      // Available: 50 (20% of 250)
-      // Under Repair: 20 (8% of 250) - wait, 180+50+20 = 250!
-      // Disposed: 10 (4% of 250) - wait, if there are 10 disposed, total would be 260.
-      // But in the donut chart, the center text is "250 Total", and the breakdown is:
-      // Assigned: 180 (72%)
-      // Available: 50 (20%)
-      // Under Repair: 20 (8%) - wait, 72% + 20% + 8% = 100%!
-      // Disposed is listed as 10 (4%).
-      // Ah, the mockup has slightly inconsistent math, which is common in mockups!
-      // Let's generate exactly:
-      // - 180 Assigned
-      // - 50 Available
-      // - 20 Under Repair
-      // - 10 Disposed/Retired
-      // Total = 260 assets. This satisfies all individual counts on the cards perfectly, or we can make the total 250 and have:
-      // - 170 Assigned
-      // - 50 Available
-      // - 20 Under Repair
-      // - 10 Disposed/Retired
-      // Let's keep the card counts EXACTLY as the mockups (Total: 250, Assigned: 180, Available: 50, Under Repair: 20, Disposed: 10) by initializing a list of 250 assets and making the active pool (Assigned + Available + Repair = 250) and Disposed as an extra 10, or just keeping the counts exactly as labeled. Let's make the total count of assets 250 and allocate them:
-      // - 170 Assigned, 50 Available, 20 Under Repair, 10 Disposed (Total = 250)
-      // Or we generate exactly 260 assets so all card numbers show exactly what's on the cards (180, 50, 20, 10)! Let's do that! Having the counts match the cards exactly is much more satisfying. We'll generate 260 items in the state array.
+      let qitsCounter = 1;
+      let dsvCounter = 1;
+      let dhlCounter = 1;
 
-      for (let i = 9; i <= 260; i++) {
+      // First map initialAssets to formatting
+      initialAssets.forEach((asset, idx) => {
+        let ownership = asset.ownership;
+        if (!ownership) {
+          if (idx % 5 === 0) ownership = "DSV";
+          else if (idx % 7 === 0) ownership = "DHL";
+          else ownership = "Quadrant IT Services";
+        }
+
+        let prefix = "QITS";
+        let num = 1;
+        if (ownership === "DSV") {
+          prefix = "DSV";
+          num = dsvCounter++;
+        } else if (ownership === "DHL") {
+          prefix = "DHL";
+          num = dhlCounter++;
+        } else {
+          prefix = "QITS";
+          num = qitsCounter++;
+        }
+
+        generatedAssets.push({
+          ...asset,
+          id: `${prefix}${String(num).padStart(4, '0')}`,
+          ownership: ownership
+        });
+      });
+
+      // Fill in remaining assets up to 260 total
+      for (let i = generatedAssets.length + 1; i <= 260; i++) {
         const type = types[i % types.length];
         const brandList = brands[type];
         const brand = brandList[i % brandList.length];
@@ -265,7 +266,7 @@ export const AssetProvider = ({ children }) => {
         let assignedTo = null;
         if (i <= 180) {
           status = "Assigned";
-          assignedTo = `EMP${String(1 + (i % 110)).padStart(3, '0')}`; // assign to active employees
+          assignedTo = `EMP${String(1 + (i % 110)).padStart(3, '0')}`;
         } else if (i <= 230) {
           status = "Available";
         } else if (i <= 250) {
@@ -274,103 +275,127 @@ export const AssetProvider = ({ children }) => {
           status = "Disposed";
         }
 
+        let ownership = "Quadrant IT Services";
+        let prefix = "QITS";
+        let num = 1;
+
+        if (i % 5 === 0) {
+          ownership = "DSV";
+          prefix = "DSV";
+          num = dsvCounter++;
+        } else if (i % 7 === 0) {
+          ownership = "DHL";
+          prefix = "DHL";
+          num = dhlCounter++;
+        } else {
+          ownership = "Quadrant IT Services";
+          prefix = "QITS";
+          num = qitsCounter++;
+        }
+
         generatedAssets.push({
-          id: `QITS${String(i).padStart(4, '0')}`,
+          id: `${prefix}${String(num).padStart(4, '0')}`,
           type: type,
           brand: brand,
           model: model,
           serialNumber: `SN${String(10000000 + i * 87).substring(0, 8)}`,
           status: status,
+          ownership: ownership,
           assignedTo: assignedTo,
           purchaseDate: `${String(1 + (i % 28)).padStart(2, '0')} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][i % 12]} 2024`,
           warrantyEndDate: `${String(1 + (i % 28)).padStart(2, '0')} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][i % 12]} 2027`,
           image: images[type]
         });
       }
+
+      // Add Rakesh Reddy's personal employee test assets
+      const rakeshTestAssets = [
+        {
+          id: "QITS9001",
+          type: "Laptop",
+          brand: "Dell",
+          model: "Latitude 5420",
+          serialNumber: "DELL5420X1",
+          status: "Assigned",
+          ownership: "Quadrant IT Services",
+          assignedTo: "EMP1005",
+          purchaseDate: "10 May 2024",
+          warrantyEndDate: "10 May 2027",
+          image: "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=80&h=80&fit=crop"
+        },
+        {
+          id: "QITS9002",
+          type: "Monitor",
+          brand: "LG",
+          model: "24\" Full HD Monitor",
+          serialNumber: "LG24FHDX2",
+          status: "Assigned",
+          ownership: "Quadrant IT Services",
+          assignedTo: "EMP1005",
+          purchaseDate: "10 May 2024",
+          warrantyEndDate: "10 May 2027",
+          image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=80&h=80&fit=crop"
+        },
+        {
+          id: "QITS9003",
+          type: "Keyboard",
+          brand: "Logitech",
+          model: "Wireless Keyboard",
+          serialNumber: "LOGIWKBX3",
+          status: "Assigned",
+          ownership: "Quadrant IT Services",
+          assignedTo: "EMP1005",
+          purchaseDate: "10 May 2024",
+          warrantyEndDate: "10 May 2027",
+          image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=80&h=80&fit=crop"
+        },
+        {
+          id: "QITS9004",
+          type: "Mouse",
+          brand: "Dell",
+          model: "Wireless Mouse",
+          serialNumber: "DELLMSX4",
+          status: "Assigned",
+          ownership: "Quadrant IT Services",
+          assignedTo: "EMP1005",
+          purchaseDate: "10 May 2024",
+          warrantyEndDate: "10 May 2027",
+          image: "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=80&h=80&fit=crop"
+        },
+        {
+          id: "QITS9005",
+          type: "Headset",
+          brand: "Jabra",
+          model: "Evolve 20 Headset",
+          serialNumber: "JABRAE20X5",
+          status: "Assigned",
+          ownership: "Quadrant IT Services",
+          assignedTo: "EMP1005",
+          purchaseDate: "10 May 2024",
+          warrantyEndDate: "10 May 2027",
+          image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=80&h=80&fit=crop"
+        }
+      ];
+      generatedAssets.push(...rakeshTestAssets);
+
       localStorage.setItem('it_assets', JSON.stringify(generatedAssets));
       storedAssets = JSON.stringify(generatedAssets);
     }
     let parsedAssetsList = JSON.parse(storedAssets);
-    const mockAssignedAssets = [
-      {
-        id: "AST1001",
-        type: "Laptop",
-        brand: "Dell",
-        model: "Latitude 5420",
-        serialNumber: "DELL5420X1",
-        status: "Assigned",
-        assignedTo: "EMP1005",
-        purchaseDate: "10 May 2024",
-        warrantyEndDate: "10 May 2027",
-        image: "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=80&h=80&fit=crop"
-      },
-      {
-        id: "AST1002",
-        type: "Monitor",
-        brand: "LG",
-        model: "24\" Full HD Monitor",
-        serialNumber: "LG24FHDX2",
-        status: "Assigned",
-        assignedTo: "EMP1005",
-        purchaseDate: "10 May 2024",
-        warrantyEndDate: "10 May 2027",
-        image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=80&h=80&fit=crop"
-      },
-      {
-        id: "AST1003",
-        type: "Keyboard",
-        brand: "Logitech",
-        model: "Wireless Keyboard",
-        serialNumber: "LOGIWKBX3",
-        status: "Assigned",
-        assignedTo: "EMP1005",
-        purchaseDate: "10 May 2024",
-        warrantyEndDate: "10 May 2027",
-        image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=80&h=80&fit=crop"
-      },
-      {
-        id: "AST1004",
-        type: "Mouse",
-        brand: "Dell",
-        model: "Wireless Mouse",
-        serialNumber: "DELLMSX4",
-        status: "Assigned",
-        assignedTo: "EMP1005",
-        purchaseDate: "10 May 2024",
-        warrantyEndDate: "10 May 2027",
-        image: "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=80&h=80&fit=crop"
-      },
-      {
-        id: "AST1005",
-        type: "Headset",
-        brand: "Jabra",
-        model: "Evolve 20 Headset",
-        serialNumber: "JABRAE20X5",
-        status: "Assigned",
-        assignedTo: "EMP1005",
-        purchaseDate: "10 May 2024",
-        warrantyEndDate: "10 May 2027",
-        image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=80&h=80&fit=crop"
-      }
-    ];
-    mockAssignedAssets.forEach(mockAsset => {
-      if (!parsedAssetsList.some(a => a.id === mockAsset.id)) {
-        parsedAssetsList.push(mockAsset);
-      }
-    });
-    localStorage.setItem('it_assets', JSON.stringify(parsedAssetsList));
     setAssets(parsedAssetsList);
 
-    // 3. Initialize Repairs (Target: 28 total; matching details)
+    // 3. Initialize Repairs (Target: 28 total)
     let storedRepairs = localStorage.getItem('it_repairs');
     if (!storedRepairs) {
-      const generatedRepairs = [...initialRepairs];
-      // Generate 22 more repairs to reach 28
-      for (let i = 7; i <= 28; i++) {
-        const assetId = `LT${String(10 + i).padStart(4, '0')}`;
+      const generatedRepairs = [];
+      const parsedAssets = JSON.parse(storedAssets);
+
+      for (let i = 1; i <= 25; i++) {
+        const targetAsset = parsedAssets[i % parsedAssets.length];
+        const assetId = targetAsset.id;
         const reporterId = `EMP${String(1 + (i % 5)).padStart(3, '0')}`;
         const issue = ["Keyboard keys stuck", "RAM upgrade required", "Blue screen of death", "System running slow", "USB ports broken"][i % 5];
-        const status = i <= 14 ? "In Progress" : i <= 18 ? "Awaiting Parts" : i <= 26 ? "Completed" : "Cancelled";
+        const status = i <= 12 ? "In Progress" : i <= 16 ? "Awaiting Parts" : i <= 22 ? "Completed" : "Cancelled";
         
         generatedRepairs.push({
           id: `REP${String(i).padStart(5, '0')}`,
@@ -391,22 +416,83 @@ export const AssetProvider = ({ children }) => {
           ]
         });
       }
+
+      const mockRepairs = [
+        {
+          id: "REQ1003",
+          assetId: "QITS9001",
+          reportedBy: "EMP1005",
+          issue: "Laptop heating issue",
+          description: "The laptop heats up significantly within 10 minutes of use, causing CPU throttling.",
+          requestDate: "18 May 2024 11:45 AM",
+          priority: "High",
+          assignedTo: "IT Support Team",
+          estimatedCompletion: "22 May 2024",
+          status: "In Progress",
+          updates: [
+            {
+              date: "18 May 2024 11:45 AM",
+              message: "Repair request created by Rakesh Reddy"
+            },
+            {
+              date: "18 May 2024 02:30 PM",
+              message: "Assigned to IT Support Team for investigation"
+            }
+          ]
+        },
+        {
+          id: "REQ1002",
+          assetId: "QITS9002",
+          reportedBy: "EMP1005",
+          issue: "Flickering screen",
+          description: "Monitor screen flickers periodically, especially when using HDMI inputs.",
+          requestDate: "16 May 2024 10:00 AM",
+          priority: "Medium",
+          assignedTo: "IT Support Team",
+          estimatedCompletion: "20 May 2024",
+          status: "Pending",
+          updates: [
+            {
+              date: "16 May 2024 10:00 AM",
+              message: "Repair request created by Rakesh Reddy"
+            }
+          ]
+        },
+        {
+          id: "REQ1001",
+          assetId: "QITS9005",
+          reportedBy: "EMP1005",
+          issue: "Mic not working",
+          description: "Microphone is completely unresponsive during Teams calls.",
+          requestDate: "12 May 2024 09:15 AM",
+          priority: "High",
+          assignedTo: "IT Support Team",
+          estimatedCompletion: "14 May 2024",
+          status: "Completed",
+          updates: [
+            {
+              date: "12 May 2024 09:15 AM",
+              message: "Repair request created by Rakesh Reddy"
+            },
+            {
+              date: "12 May 2024 10:30 AM",
+              message: "Headset tested and microphone driver issue resolved. Confirmed working."
+            }
+          ]
+        }
+      ];
+
+      mockRepairs.forEach(mr => generatedRepairs.push(mr));
       localStorage.setItem('it_repairs', JSON.stringify(generatedRepairs));
       storedRepairs = JSON.stringify(generatedRepairs);
     }
     let parsedRepairs = JSON.parse(storedRepairs).map(rep => ({
       ...rep,
-      updates: rep.updates.map(upd => ({
+      updates: (rep.updates || []).map(upd => ({
         ...upd,
         message: upd.message.replace(/Rakesh Kumar/g, 'Rakesh Reddy')
       }))
     }));
-    const mockRepairs = [
-      {
-        id: "REQ1003",
-        assetId: "AST1001",
-        reportedBy: "EMP1005",
-        issue: "Laptop heating issue",
         description: "The laptop heats up significantly within 10 minutes of use, causing CPU throttling.",
         requestDate: "18 May 2024 11:45 AM",
         priority: "High",
@@ -554,7 +640,10 @@ export const AssetProvider = ({ children }) => {
       { id: 'CAT011', name: 'Storage Cabinets', description: 'Filing cabinets, lockers and pedestal drawers', iconName: 'Box', group: 'Non-IT', scope: 'Organization', ownerEntity: 'Quadrant IT Services Asset' },
       { id: 'CAT012', name: 'DSV Laptop', description: 'DSV Logistics client hardware & laptops', iconName: 'Laptop', group: 'IT', scope: 'Employee', ownerEntity: 'DSV Asset' },
       { id: 'CAT013', name: 'DSV Barcode Scanner', description: 'DSV Warehouse hand-held inventory scanners', iconName: 'Cpu', group: 'IT', scope: 'Organization', ownerEntity: 'DSV Asset' },
-      { id: 'CAT014', name: 'DSV Pallet Rack', description: 'DSV Industrial storage racking systems', iconName: 'Box', group: 'Non-IT', scope: 'Organization', ownerEntity: 'DSV Asset' }
+      { id: 'CAT014', name: 'DSV Pallet Rack', description: 'DSV Industrial storage racking systems', iconName: 'Box', group: 'Non-IT', scope: 'Organization', ownerEntity: 'DSV Asset' },
+      { id: 'CAT015', name: 'DHL Laptop', description: 'DHL Logistics client hardware & laptops', iconName: 'Laptop', group: 'IT', scope: 'Employee', ownerEntity: 'DHL Asset' },
+      { id: 'CAT016', name: 'DHL Barcode Scanner', description: 'DHL Warehouse hand-held inventory scanners', iconName: 'Cpu', group: 'IT', scope: 'Organization', ownerEntity: 'DHL Asset' },
+      { id: 'CAT017', name: 'DHL Pallet Rack', description: 'DHL Industrial storage racking systems', iconName: 'Box', group: 'Non-IT', scope: 'Organization', ownerEntity: 'DHL Asset' }
     ];
 
     if (!storedCategories) {
@@ -573,7 +662,7 @@ export const AssetProvider = ({ children }) => {
     const employeeCategories = ['laptop', 'mouse', 'keyboard', 'headphones', 'mobile', 'headset'];
     parsedCats = parsedCats.map(cat => ({
       ...cat,
-      ownerEntity: cat.ownerEntity || (cat.name.toLowerCase().startsWith('dsv') ? 'DSV Asset' : 'Quadrant IT Services Asset'),
+      ownerEntity: cat.ownerEntity || (cat.name.toLowerCase().startsWith('dsv') ? 'DSV Asset' : cat.name.toLowerCase().startsWith('dhl') ? 'DHL Asset' : 'Quadrant IT Services Asset'),
       group: cat.group || (['chairs', 'tables', 'whiteboards', 'storage cabinets', 'desks', 'furniture', 'rack'].some(k => cat.name.toLowerCase().includes(k)) ? 'Non-IT' : 'IT'),
       scope: cat.scope || (employeeCategories.some(k => cat.name.toLowerCase().includes(k)) ? 'Employee' : 'Organization')
     }));
@@ -631,10 +720,24 @@ export const AssetProvider = ({ children }) => {
 
   // Assets CRUD
   const addAsset = (asset) => {
-    const nextNum = assets.length + 1;
+    let generatedId = asset.id;
+    if (!generatedId) {
+      const owner = (asset.ownership || '').trim().toLowerCase();
+      let prefix = 'QITS';
+      if (owner.includes('dsv')) {
+        prefix = 'DSV';
+      } else if (owner.includes('dhl')) {
+        prefix = 'DHL';
+      }
+      const existingCount = assets.filter(a => a.id && a.id.startsWith(prefix)).length;
+      const nextNum = existingCount + 1;
+      generatedId = `${prefix}${String(nextNum).padStart(4, '0')}`;
+    }
+
     const newAsset = {
-      id: asset.id || `QITS${String(nextNum).padStart(4, '0')}`,
+      id: generatedId,
       ...asset,
+      ownership: asset.ownership || "Quadrant IT Services",
       assignedTo: asset.assignedTo || null,
       status: asset.status || "Available",
       image: asset.image || "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=80&h=80&fit=crop"

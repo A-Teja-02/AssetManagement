@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { 
-  Wrench, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle, 
-  XCircle, 
-  Plus, 
-  Search, 
-  Filter, 
-  Eye, 
-  ChevronLeft, 
+import {
+  Wrench,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Plus,
+  Search,
+  Filter,
+  Eye,
+  ChevronLeft,
   ChevronRight,
   X,
   Send,
@@ -22,10 +22,10 @@ import MetricCard from '../components/MetricCard';
 import AssetIconBadge from '../components/AssetIcon';
 
 const Repairs = () => {
-  const { 
-    repairs, 
-    assets, 
-    employees, 
+  const {
+    repairs,
+    assets,
+    employees,
     currentUser,
     addRepair,
     addRepairUpdate,
@@ -35,8 +35,8 @@ const Repairs = () => {
   } = useAssetManager();
 
   // Selected Repair request state
-  const [selectedRepairId, setSelectedRepairId] = useState(repairs[0]?.id || 'REP00028');
-  
+  const [selectedRepairId, setSelectedRepairId] = useState(null);
+
   // Search, Pagination, Tab filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('All'); // All | In Progress | Awaiting Parts | Completed | Cancelled
@@ -66,7 +66,7 @@ const Repairs = () => {
 
   // 1. Calculate dynamic statistics
   const totalRepairsCount = repairs.length;
-  const myAcceptedCount = repairs.filter(r => 
+  const myAcceptedCount = repairs.filter(r =>
     r.acceptedBy && (
       r.acceptedBy.toLowerCase().includes((currentUser?.name || 'Rakesh').toLowerCase()) ||
       r.assignedTo?.toLowerCase().includes((currentUser?.name || 'Rakesh').toLowerCase())
@@ -82,7 +82,7 @@ const Repairs = () => {
     const asset = assets.find(a => a.id === rep.assetId);
     const reporter = employees.find(e => e.id === rep.reportedBy);
     const searchString = `${rep.id} ${rep.assetId} ${asset ? asset.brand : ''} ${asset ? asset.model : ''} ${rep.issue} ${reporter ? reporter.name : ''} ${rep.acceptedBy || ''} ${rep.status}`.toLowerCase();
-    
+
     const matchesSearch = searchString.includes(searchTerm.toLowerCase());
     let matchesTab = true;
     if (activeTab === 'My Requests') {
@@ -93,7 +93,7 @@ const Repairs = () => {
     } else if (activeTab !== 'All') {
       matchesTab = rep.status === activeTab;
     }
-    
+
     return matchesSearch && matchesTab;
   });
 
@@ -103,10 +103,39 @@ const Repairs = () => {
     currentPage * itemsPerPage
   );
 
+  const getAssetInfo = (assetId) => {
+    if (!assetId) return null;
+    const asset = assets.find(a => a.id === assetId);
+    if (asset) return asset;
+    let type = 'Other';
+    let model = 'Standard Asset';
+    if (assetId.startsWith('LT')) { type = 'Laptop'; model = 'Standard Laptop'; }
+    else if (assetId.startsWith('MS')) { type = 'Mouse'; model = 'Standard Mouse'; }
+    else if (assetId.startsWith('KB')) { type = 'Keyboard'; model = 'Standard Keyboard'; }
+    else if (assetId.startsWith('MN')) { type = 'Monitor'; model = 'Standard Monitor'; }
+    else if (assetId.startsWith('HD')) { type = 'Headset'; model = 'Standard Headset'; }
+    else if (assetId.startsWith('PR')) { type = 'Printer'; model = 'Standard Printer'; }
+    else if (assetId.startsWith('DT')) { type = 'Desktop'; model = 'Standard Desktop'; }
+    return { id: assetId, type, model, brand: 'Generic' };
+  };
+
+  const getReporterInfo = (reportedBy) => {
+    if (!reportedBy) return null;
+    const reporter = employees.find(e => e.id === reportedBy);
+    if (reporter) return reporter;
+    let name = 'Priya Singh';
+    if (reportedBy === 'EMP001') name = 'Rakesh Reddy';
+    else if (reportedBy === 'EMP002') name = 'Rahul Sharma';
+    else if (reportedBy === 'EMP004') name = 'Amit Verma';
+    else if (reportedBy === 'EMP005') name = 'Neha Patel';
+    else if (reportedBy === 'EMP006') name = 'Vikram Reddy';
+    return { id: reportedBy, name };
+  };
+
   // 3. Find selected repair details
-  const selectedRepair = repairs.find(r => r.id === selectedRepairId) || repairs[0];
-  const selectedAsset = selectedRepair ? assets.find(a => a.id === selectedRepair.assetId) : null;
-  const selectedReporter = selectedRepair ? employees.find(e => e.id === selectedRepair.reportedBy) : null;
+  const selectedRepair = repairs.find(r => r.id === selectedRepairId) || null;
+  const selectedAsset = selectedRepair ? getAssetInfo(selectedRepair.assetId) : null;
+  const selectedReporter = selectedRepair ? getReporterInfo(selectedRepair.reportedBy) : null;
 
   // 4. Submit Handlers
   const handleOpenAddModal = () => {
@@ -176,8 +205,8 @@ const Repairs = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <MetricCard icon={Wrench} title="Total Repair Requests" value={totalRepairsCount} color="blue" linkTo="/repairs" />
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+        <MetricCard icon={Wrench} title="Total Repairs" value={totalRepairsCount} color="blue" linkTo="/repairs" />
         <MetricCard icon={UserCheck} title="My Requests" value={myAcceptedCount} color="green" linkTo="/repairs" subtext={`Accepted by ${currentUser?.name || 'Rakesh'}`} />
         <MetricCard icon={Clock} title="In Progress" value={inProgressCount} color="green" linkTo="/repairs" />
         <MetricCard icon={AlertCircle} title="Awaiting Parts" value={awaitingCount} color="orange" linkTo="/repairs" />
@@ -187,11 +216,11 @@ const Repairs = () => {
 
       {/* Main Master-Detail panels */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Columns (Span 2): Repair Requests list */}
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+        {/* Left Columns (Span 2 or 3 depending on detail card selection): Repair Requests list */}
+        <div className={`${selectedRepairId ? 'lg:col-span-2' : 'lg:col-span-3'} bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6 transition-all duration-300`}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h3 className="text-base font-bold text-slate-800">Repair Requests</h3>
-            
+
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <div className="relative flex-1 sm:w-48">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -205,13 +234,6 @@ const Repairs = () => {
                   className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                 />
               </div>
-              <button 
-                onClick={handleOpenAddModal}
-                className="flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-all shadow-md shadow-blue-500/10 shrink-0"
-              >
-                <Plus className="h-4 w-4" />
-                <span>New Request</span>
-              </button>
             </div>
           </div>
 
@@ -221,9 +243,8 @@ const Repairs = () => {
               <button
                 key={tab}
                 onClick={() => { setActiveTab(tab); setCurrentPage(1); }}
-                className={`pb-2.5 px-1 border-b-2 transition-all shrink-0 ${
-                  activeTab === tab ? 'border-blue-600 text-blue-600 font-bold' : 'border-transparent text-slate-400'
-                }`}
+                className={`pb-2.5 px-1 border-b-2 transition-all shrink-0 ${activeTab === tab ? 'border-blue-600 text-blue-600 font-bold' : 'border-transparent text-slate-400'
+                  }`}
               >
                 {tab} {tab === 'My Requests' ? `(${myAcceptedCount})` : ''}
               </button>
@@ -235,15 +256,14 @@ const Repairs = () => {
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  <th className="pb-3 pr-4">Request ID</th>
-                  <th className="pb-3 px-4">Asset</th>
-                  <th className="pb-3 px-4">Asset Type</th>
-                  <th className="pb-3 px-4">Reported By</th>
-                  <th className="pb-3 px-4">Issue</th>
-                  <th className="pb-3 px-4">Status</th>
-                  <th className="pb-3 px-4">Accepted By</th>
-                  <th className="pb-3 px-4">Request Date</th>
-                  <th className="pb-3 pl-4 text-right">Accept / Actions</th>
+                  <th className="pb-3 pr-2">Request ID</th>
+                  <th className="pb-3 px-2">Asset Details</th>
+                  <th className="pb-3 px-2">Reported By</th>
+                  <th className="pb-3 px-2">Issue</th>
+                  <th className="pb-3 px-2">Status</th>
+                  <th className="pb-3 px-2">Accepted By</th>
+                  <th className="pb-3 px-2">Request Date</th>
+                  <th className="pb-3 pl-2 text-right">Accept / Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -255,60 +275,70 @@ const Repairs = () => {
                   </tr>
                 ) : (
                   paginatedRepairs.map((rep) => {
-                    const asset = assets.find(a => a.id === rep.assetId);
-                    const reporter = employees.find(e => e.id === rep.reportedBy);
+                    const asset = getAssetInfo(rep.assetId);
+                    const reporter = getReporterInfo(rep.reportedBy);
                     const isSelected = selectedRepairId === rep.id;
 
                     return (
-                      <tr 
-                        key={rep.id} 
+                      <tr
+                        key={rep.id}
                         onClick={() => setSelectedRepairId(rep.id)}
-                        className={`cursor-pointer transition-all ${
-                          isSelected ? 'bg-blue-50/30' : 'hover:bg-slate-50/50'
-                        }`}
+                        className={`cursor-pointer transition-all ${isSelected ? 'bg-blue-50/30' : 'hover:bg-slate-50/50'
+                          }`}
                       >
-                        <td className="py-3.5 pr-4 font-bold text-blue-600">{rep.id}</td>
-                        <td className="py-3.5 px-4 font-semibold text-slate-800">
-                          {asset ? (
-                            <div className="flex items-center gap-2">
-                              <AssetIconBadge type={asset.type} className="h-6 w-6 rounded-md" iconSize="h-3.5 w-3.5" />
-                              <span>{asset.id} &bull; {asset.model}</span>
+                        <td className="py-3.5 pr-2 font-bold text-blue-600">{rep.id}</td>
+                        <td className="py-3.5 px-2 font-semibold text-slate-800">
+                          <div className="flex items-center gap-2">
+                            <AssetIconBadge type={asset.type} className="h-6 w-6 rounded-md shrink-0" iconSize="h-3.5 w-3.5" />
+                            <div className="flex flex-col min-w-0">
+                              <span className="truncate max-w-[125px] font-bold text-slate-800 leading-tight">{asset.model}</span>
+                              <span className="text-[10px] text-slate-400 font-medium truncate">{asset.id} &bull; {asset.type}</span>
                             </div>
-                          ) : (
-                            <span>{rep.assetId}</span>
-                          )}
+                          </div>
                         </td>
-                        <td className="py-3.5 px-4 text-slate-500">{asset ? asset.type : '-'}</td>
-                        <td className="py-3.5 px-4">
-                          {reporter ? (
-                            <span>{reporter.name} ({reporter.id})</span>
-                          ) : (
-                            <span className="text-slate-400">-</span>
-                          )}
+                        <td className="py-3.5 px-2">
+                          <div className="flex flex-col leading-tight min-w-0">
+                            <span className="font-semibold text-slate-700 truncate max-w-[110px]">{reporter.name}</span>
+                            <span className="text-[10px] text-slate-400 font-mono mt-0.5">{reporter.id}</span>
+                          </div>
                         </td>
-                        <td className="py-3.5 px-4 text-slate-600 truncate max-w-[120px]">{rep.issue}</td>
-                        <td className="py-3.5 px-4">
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase whitespace-nowrap inline-block text-center min-w-[90px] ${
-                            rep.status === 'In Progress' ? 'bg-emerald-50 text-emerald-600' :
-                            rep.status === 'Awaiting Parts' ? 'bg-amber-50 text-amber-600' :
-                            rep.status === 'Completed' ? 'bg-blue-50 text-blue-600' :
-                            'bg-slate-100 text-slate-600'
-                          }`}>
+                        <td className="py-3.5 px-2 text-slate-600 truncate max-w-[100px]">{rep.issue}</td>
+                        <td className="py-3.5 px-2">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase whitespace-nowrap inline-block text-center min-w-[85px] ${rep.status === 'In Progress' ? 'bg-emerald-50 text-emerald-600' :
+                              rep.status === 'Awaiting Parts' ? 'bg-amber-50 text-amber-600' :
+                                rep.status === 'Completed' ? 'bg-blue-50 text-blue-600' :
+                                  'bg-slate-100 text-slate-600'
+                            }`}>
                             {rep.status}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 font-semibold">
+                        <td className="py-3.5 px-2 font-semibold">
                           {rep.acceptedBy ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200/60 whitespace-nowrap">
-                              <UserCheck className="h-3 w-3 text-emerald-600 shrink-0" />
-                              <span>{rep.acceptedBy}</span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200/60 whitespace-nowrap" title={rep.acceptedBy}>
+                              <UserCheck className="h-2.5 w-2.5 text-emerald-600 shrink-0" />
+                              <span>{rep.acceptedBy.replace(' (Admin)', '')}</span>
                             </span>
                           ) : (
-                            <span className="text-[11px] font-medium text-slate-400 italic">Unassigned</span>
+                            <span className="text-[10px] font-medium text-slate-400 italic">Unassigned</span>
                           )}
                         </td>
-                        <td className="py-3.5 px-4 text-slate-500 whitespace-nowrap">{rep.requestDate.split(' ')[0]}</td>
-                        <td className="py-3.5 pl-4 text-right">
+                        <td className="py-3.5 px-2 text-slate-500">
+                          {(() => {
+                            const parts = rep.requestDate.split(' ');
+                            if (parts.length >= 3) {
+                              const datePart = `${parts[0]} ${parts[1]} ${parts[2]}`;
+                              const timePart = parts.slice(3).join(' ');
+                              return (
+                                <div className="flex flex-col text-[10px] leading-tight whitespace-nowrap">
+                                  <span className="font-semibold text-slate-700">{datePart}</span>
+                                  {timePart && <span className="text-slate-400 font-medium text-[9px] mt-0.5">{timePart}</span>}
+                                </div>
+                              );
+                            }
+                            return <span className="whitespace-nowrap">{rep.requestDate}</span>;
+                          })()}
+                        </td>
+                        <td className="py-3.5 pl-2 text-right">
                           <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                             {!rep.acceptedBy && rep.status !== 'Completed' && rep.status !== 'Cancelled' ? (
                               <>
@@ -336,7 +366,7 @@ const Repairs = () => {
                                 </button>
                               </>
                             ) : (
-                              <button 
+                              <button
                                 onClick={() => setSelectedRepairId(rep.id)}
                                 className={`p-1.5 rounded-lg ${isSelected ? 'bg-blue-100 text-blue-700' : 'hover:bg-slate-100 text-blue-600'}`}
                                 title="Select / View Details"
@@ -361,7 +391,7 @@ const Repairs = () => {
                 Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredRepairs.length)} of {filteredRepairs.length} entries
               </span>
               <div className="flex items-center gap-1">
-                <button 
+                <button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
                   className="p-2 border border-slate-200 hover:bg-slate-50 rounded-xl disabled:opacity-40 transition-all"
@@ -394,18 +424,17 @@ const Repairs = () => {
                       <button
                         key={p}
                         onClick={() => setCurrentPage(p)}
-                        className={`h-8 w-8 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                          currentPage === p 
-                            ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20' 
+                        className={`h-8 w-8 rounded-xl border text-xs font-bold transition-all cursor-pointer ${currentPage === p
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20'
                             : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                        }`}
+                          }`}
                       >
                         {p}
                       </button>
                     )
                   ));
                 })()}
-                <button 
+                <button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
                   className="p-2 border border-slate-200 hover:bg-slate-50 rounded-xl disabled:opacity-40 transition-all"
@@ -418,8 +447,8 @@ const Repairs = () => {
         </div>
 
         {/* Right Column: Selected Repair Details pane */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6 self-start">
-          {selectedRepair ? (
+        {selectedRepairId && selectedRepair && (
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6 self-start animate-fade-in">
             <div className="space-y-6">
               {/* Asset header */}
               <div className="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -430,14 +459,23 @@ const Repairs = () => {
                     <p className="text-[10px] text-slate-400 font-mono mt-0.5">{selectedRepair.assetId}</p>
                   </div>
                 </div>
-                <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
-                  selectedRepair.status === 'In Progress' ? 'bg-emerald-50 text-emerald-600' :
-                  selectedRepair.status === 'Awaiting Parts' ? 'bg-amber-50 text-amber-600' :
-                  selectedRepair.status === 'Completed' ? 'bg-blue-50 text-blue-600' :
-                  'bg-slate-100 text-slate-600'
-                }`}>
-                  {selectedRepair.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${selectedRepair.status === 'In Progress' ? 'bg-emerald-50 text-emerald-600' :
+                      selectedRepair.status === 'Awaiting Parts' ? 'bg-amber-50 text-amber-600' :
+                        selectedRepair.status === 'Completed' ? 'bg-blue-50 text-blue-600' :
+                          'bg-slate-100 text-slate-600'
+                    }`}>
+                    {selectedRepair.status}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRepairId(null)}
+                    className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 cursor-pointer"
+                    title="Close details"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Details grid */}
@@ -466,11 +504,10 @@ const Repairs = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-slate-400">Priority</span>
-                  <span className={`px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase ${
-                    selectedRepair.priority === 'High' ? 'bg-red-50 text-red-600' :
-                    selectedRepair.priority === 'Medium' ? 'bg-amber-50 text-amber-600' :
-                    'bg-slate-100 text-slate-600'
-                  }`}>
+                  <span className={`px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase ${selectedRepair.priority === 'High' ? 'bg-red-50 text-red-600' :
+                      selectedRepair.priority === 'Medium' ? 'bg-amber-50 text-amber-600' :
+                        'bg-slate-100 text-slate-600'
+                    }`}>
                     {selectedRepair.priority}
                   </span>
                 </div>
@@ -506,7 +543,7 @@ const Repairs = () => {
               {/* Updates timeline */}
               <div className="space-y-4 pt-4 border-t border-slate-100">
                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Update History</h4>
-                
+
                 <div className="relative border-l border-slate-200 pl-4 space-y-5 ml-1.5 text-xs text-slate-600">
                   {selectedRepair.updates.map((upd, uIdx) => (
                     <div key={uIdx} className="relative">
@@ -522,13 +559,13 @@ const Repairs = () => {
               {/* Action Buttons */}
               {selectedRepair.status !== 'Completed' && selectedRepair.status !== 'Cancelled' && (
                 <div className="flex gap-3 pt-4 border-t border-slate-100">
-                  <button 
+                  <button
                     onClick={handleCancelRequest}
                     className="flex-1 py-2.5 px-4 rounded-xl border border-red-200 hover:bg-red-500/5 text-red-500 font-bold text-xs transition-all"
                   >
                     Cancel Request
                   </button>
-                  <button 
+                  <button
                     onClick={handleOpenUpdateModal}
                     className="flex-1 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-lg shadow-blue-500/10 transition-all flex items-center justify-center gap-1"
                   >
@@ -538,12 +575,8 @@ const Repairs = () => {
                 </div>
               )}
             </div>
-          ) : (
-            <p className="text-xs text-slate-400 text-center py-12">
-              Select a repair request to view logs.
-            </p>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* CRUD: New Repair Request Modal */}
@@ -561,8 +594,8 @@ const Repairs = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Select Asset *</label>
-                  <select 
-                    value={formAssetId} 
+                  <select
+                    value={formAssetId}
                     onChange={e => setFormAssetId(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   >
@@ -573,8 +606,8 @@ const Repairs = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Reported By *</label>
-                  <select 
-                    value={formReporterId} 
+                  <select
+                    value={formReporterId}
                     onChange={e => setFormReporterId(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   >
@@ -584,13 +617,13 @@ const Repairs = () => {
                   </select>
                 </div>
               </div>
-              
+
               <div className="space-y-1">
                 <label className="block text-xs font-bold text-slate-500">Issue Title *</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={formIssue} 
+                <input
+                  type="text"
+                  required
+                  value={formIssue}
                   onChange={e => setFormIssue(e.target.value)}
                   placeholder="e.g. Screen flickering or RAM failure"
                   className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
@@ -599,10 +632,10 @@ const Repairs = () => {
 
               <div className="space-y-1">
                 <label className="block text-xs font-bold text-slate-500">Detailed Description *</label>
-                <textarea 
+                <textarea
                   rows={2}
-                  required 
-                  value={formDescription} 
+                  required
+                  value={formDescription}
                   onChange={e => setFormDescription(e.target.value)}
                   placeholder="Describe the failure symptoms..."
                   className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none resize-none"
@@ -612,8 +645,8 @@ const Repairs = () => {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Priority</label>
-                  <select 
-                    value={formPriority} 
+                  <select
+                    value={formPriority}
                     onChange={e => setFormPriority(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   >
@@ -624,8 +657,8 @@ const Repairs = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Assigned Support</label>
-                  <select 
-                    value={formAssignedTo} 
+                  <select
+                    value={formAssignedTo}
                     onChange={e => setFormAssignedTo(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                   >
@@ -636,7 +669,7 @@ const Repairs = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Estimated Date</label>
-                  <input 
+                  <input
                     type="date"
                     value={formEstDate}
                     onChange={e => setFormEstDate(e.target.value)}

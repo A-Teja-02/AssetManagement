@@ -178,29 +178,66 @@ const ReturnAsset = () => {
 
   const activeAdminName = currentUser?.name || 'Rakesh Reddy';
 
-  // Map real return activity logs into history items
-  const realReturnLogs = (activity || [])
-    .filter(a => a.activity === 'Return Asset')
-    .map((log, index) => {
-      const empIdMatch = log.details.match(/EMP\d+/i);
-      const empId = empIdMatch ? empIdMatch[0] : '';
-      const emp = employees.find(e => e.id === empId || log.details.toLowerCase().includes(e.name.toLowerCase()));
+  // Map real return activity logs into history items (grouped by timestamp + employee)
+  const realReturnLogs = (() => {
+    const returnLogsRaw = (activity || []).filter(a => a.activity === 'Return Asset');
+    const groups = {};
+    
+    returnLogsRaw.forEach(log => {
+      // Find employee info from details
+      const empIdMatch = log.details.match(/Q?EMP\d+/i) || log.details.match(/\(([^)]+)\)/);
+      const empId = empIdMatch ? (Array.isArray(empIdMatch) ? empIdMatch[0] : empIdMatch) : '';
+      const emp = employees.find(e => e.id.toLowerCase() === empId.toLowerCase() || log.details.toLowerCase().includes(e.name.toLowerCase()));
+      
+      const empName = emp ? emp.name : (log.details.match(/from\s+([^(!,]+)/i)?.[1]?.trim() || 'Employee');
+      const empActualId = emp ? emp.id : (empId || 'EMP011');
+      
+      // Grouping key: dateTime + empActualId
+      const key = `${log.dateTime}_${empActualId}`;
+      
+      // Extract asset ID
+      const assetIdMatch = log.details.match(/asset\s+(\S+)/i);
+      const assetId = assetIdMatch ? assetIdMatch[1] : '';
+      
       const condMatch = log.details.match(/Condition:\s*(\w+)/i);
-      const countMatch = log.details.match(/(\d+)\s+assets?/i);
-      const assetCountStr = countMatch ? `${countMatch[1]} Asset${parseInt(countMatch[1]) > 1 ? 's' : ''}` : '1 Asset';
+      const condition = condMatch ? condMatch[1] : 'Good';
 
+      if (!groups[key]) {
+        groups[key] = {
+          dateTime: log.dateTime,
+          employeeName: empName,
+          employeeId: empActualId,
+          user: log.user,
+          condition: condition,
+          assetIds: [assetId],
+          details: log.details
+        };
+      } else {
+        // Prevent duplicate asset IDs in the list if double logged
+        if (assetId && !groups[key].assetIds.includes(assetId)) {
+          groups[key].assetIds.push(assetId);
+        }
+      }
+    });
+
+    return Object.values(groups).map((group, index) => {
+      const count = group.assetIds.length;
+      const assetCountStr = `${count} Asset${count > 1 ? 's' : ''}`;
+      const assetList = group.assetIds.filter(Boolean).join(', ');
+      
       return {
         id: `RET${String(100 - index).padStart(4, '0')}`,
-        employeeName: emp ? emp.name : (log.details.match(/from\s+([^(!,]+)/i)?.[1]?.trim() || 'Rahul Sharma'),
-        employeeId: emp ? emp.id : (empId || 'EMP002'),
+        employeeName: group.employeeName,
+        employeeId: group.employeeId,
         assetsCount: assetCountStr,
-        returnDate: formatDateWithYear(log.dateTime),
-        returnedTo: log.user || activeAdminName,
-        reason: log.details.toLowerCase().includes('resig') ? 'Employee Resignation' : 'Standard Return',
-        condition: condMatch ? condMatch[1] : 'Good',
-        details: log.details
+        returnDate: formatDateWithYear(group.dateTime),
+        returnedTo: group.user || activeAdminName,
+        reason: group.details.toLowerCase().includes('resig') ? 'Employee Resignation' : 'Standard Return',
+        condition: group.condition,
+        details: `Returned ${count} asset(s) (${assetList}) from ${group.employeeName}.`
       };
     });
+  })();
 
   // Default initial return history items for rich display
   const defaultReturnHistory = [

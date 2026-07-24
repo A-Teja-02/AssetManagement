@@ -144,8 +144,8 @@ const AssignAsset = () => {
     setSelectedCategory(null);
   };
 
-  // Filter recent assignments list for the history log table
-  const recentAssignmentsLogs = activity.filter(act => act.activity === "Assign Asset");
+  // Filter recent assignments list for the history log table (reversed to show latest first)
+  const recentAssignmentsLogs = [...activity].reverse().filter(act => act.activity === "Assign Asset");
 
   const formatDateWithYear = (dateStr) => {
     if (!dateStr) return '-';
@@ -552,26 +552,33 @@ const AssignAsset = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-              {recentAssignmentsLogs.slice(0, 3).map((log, index) => {
-                // Extract detail information
-                const empIdMatch = log.details.match(/EMP\d+/);
-                const empId = empIdMatch ? empIdMatch[0] : '';
+              {recentAssignmentsLogs.slice(0, 5).map((log, index) => {
+                // Extract detail information: matches anything inside parentheses at the end, e.g. (EMP001) or (QEMP002)
+                const empIdMatch = log.details.match(/\(([^)]+)\)$/) || log.details.match(/\(([^)]+)\)/);
+                const empId = empIdMatch ? empIdMatch[1] : '';
                 const emp = employees.find(e => e.id === empId);
+
+                // Extract name from log details before the parentheses, e.g. "to Rahul Sharma (QEMP002)"
+                const nameMatch = log.details.match(/to\s+([^(]+)/);
+                const extractedName = nameMatch ? nameMatch[1].trim() : 'Employee';
+                const displayName = emp ? emp.name : extractedName;
+
+                // Extract asset ID from details, e.g. "Assigned asset LT0001 to..."
+                const assetIdMatch = log.details.match(/asset\s+(\S+)/i);
+                const assetId = assetIdMatch ? assetIdMatch[1] : '';
+                const assetObj = assets.find(a => a.id === assetId);
+                const assetLabel = assetObj ? `${assetObj.brand} ${assetObj.model} (${assetId})` : (assetId || 'Asset');
 
                 return (
                   <tr key={index} className="hover:bg-slate-50/50">
                     <td className="py-4 pr-4 font-bold">
-                      {emp ? (
-                        <div className="flex items-center gap-2">
-                          <Avatar name={emp.name} className="h-6 w-6 rounded-full" textSize="text-[8px]" />
-                          <span>{emp.name} ({emp.id})</span>
-                        </div>
-                      ) : (
-                        <span>Rahul Sharma ({empId || 'EMP002'})</span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <Avatar name={displayName} className="h-6 w-6 rounded-full" textSize="text-[8px]" />
+                        <span>{displayName} ({empId || 'EMP002'})</span>
+                      </div>
                     </td>
                     <td className="py-4 px-4 font-bold text-blue-600">
-                      1 Asset
+                      {assetLabel}
                     </td>
                     <td className="py-4 px-4 font-semibold text-slate-600">{log.user} (Admin)</td>
                     <td className="py-4 px-4 text-slate-500">{formatDateWithYear(log.dateTime)}</td>

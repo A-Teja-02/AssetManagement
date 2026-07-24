@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { 
-  Briefcase, 
-  CheckCircle2, 
-  Wrench, 
-  ClipboardList, 
-  Plus, 
-  ShoppingBag, 
-  RefreshCw, 
-  BookOpen, 
-  Calendar, 
-  ChevronRight, 
+import {
+  Briefcase,
+  CheckCircle2,
+  Wrench,
+  ClipboardList,
+  Plus,
+  ShoppingBag,
+  RefreshCw,
+  BookOpen,
+  Calendar,
+  ChevronRight,
   ArrowRight,
   X,
   FileText,
@@ -26,16 +26,16 @@ import { downloadOrOpenGuidelinesPdf } from '../utils/downloadDocument';
 import AssetIconBadge from '../components/AssetIcon';
 
 const EmployeeDashboard = () => {
-  const { 
-    currentUser, 
-    assets, 
-    repairs, 
-    activity, 
+  const {
+    currentUser,
+    assets,
+    repairs,
+    activity,
     guidelines,
     announcements,
     addRepair,
     logActivity,
-    showToast 
+    showToast
   } = useAssetManager();
 
   // Active Modals state
@@ -59,7 +59,7 @@ const EmployeeDashboard = () => {
   // Filter items matching current logged-in employee (exclude Desktop)
   const myAssignedAssets = assets.filter(a => a.assignedTo === currentUser.id && a.type !== 'Desktop');
   const myRepairs = repairs.filter(r => r.reportedBy === currentUser.id);
-  
+
   // Sort repairs so latest is first
   const sortedRepairs = [...myRepairs].sort((a, b) => b.id.localeCompare(a.id));
 
@@ -126,7 +126,7 @@ const EmployeeDashboard = () => {
 
     addRepair(newRepair);
     showToast("Repair request successfully submitted to the IT Support Desk!");
-    
+
     // Reset form
     setRepairAssetId('');
     setRepairIssue('');
@@ -144,7 +144,7 @@ const EmployeeDashboard = () => {
 
     logActivity("Request Asset", `Requested new asset type: ${newAssetType}. Justification: ${newAssetReason}`);
     showToast(`Your request for a new ${newAssetType} has been logged and sent to IT Admin for approval.`);
-    
+
     setNewAssetReason('');
     setNewAssetType('Laptop');
     setNewAssetPriority('Medium');
@@ -155,9 +155,9 @@ const EmployeeDashboard = () => {
 
   return (
     <div className="space-y-8 animate-fade-in font-sans">
-      
+
       {/* Personalized Welcome Hero Banner */}
-      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="bg-[#1E3A8A] rounded-3xl p-6 text-white shadow-lg relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1.5 z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[11px] font-bold tracking-wide">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -166,17 +166,17 @@ const EmployeeDashboard = () => {
           <h2 className="text-xl sm:text-2xl font-black tracking-tight">
             Welcome back, {currentUser?.name || 'Rahul Sharma'} 👋
           </h2>
-          <p className="text-xs text-blue-100/90 font-medium">
+          <p className="text-xs text-slate-200/90 font-medium">
             Department: <span className="font-bold text-white">{currentUser?.department || 'IT'}</span> &bull; Employee ID: <span className="font-bold text-white">{currentUser?.id || 'EMP001'}</span> &bull; Active Devices: <span className="font-bold text-white">{activeCount}</span>
           </p>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-2.5 z-10">
           <button
             onClick={() => setActiveModal('raise')}
-            className="px-4 py-2.5 rounded-2xl bg-white text-blue-700 hover:bg-blue-50 font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2.5 rounded-2xl bg-white text-[#1E3A8A] hover:bg-slate-50 font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
           >
-            <Wrench className="h-4 w-4 text-blue-600" />
+            <Wrench className="h-4 w-4 text-[#1E3A8A]" />
             <span>Report Device Fault</span>
           </button>
           <button
@@ -191,7 +191,7 @@ const EmployeeDashboard = () => {
 
       {/* 4 KPI Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        
+
         {/* Metric 1 */}
         <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
           <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl">
@@ -244,15 +244,15 @@ const EmployeeDashboard = () => {
 
       {/* Main Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* LEFT COLUMN: Assigned Devices & Repair Logs (Span 2) */}
         <div className="lg:col-span-2 space-y-8">
-          
+
           {/* My Assigned Assets Card */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-800">My Assigned Assets</h3>
-              <button 
+              <button
                 onClick={() => setActiveModal('all_assets')}
                 className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-all"
               >
@@ -278,18 +278,17 @@ const EmployeeDashboard = () => {
                         <p className="text-[10px] text-slate-400 font-medium mt-0.5 truncate">Asset ID: {asset.id} &bull; Serial No: {asset.serialNumber}</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-4 shrink-0">
                       <div className="text-right w-28 shrink-0 hidden sm:block">
                         <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Assigned On</p>
                         <p className="text-[10px] font-bold text-slate-700 mt-0.5">{asset.purchaseDate || '10 May 2024'}</p>
                       </div>
                       <div className="w-24 flex justify-end shrink-0">
-                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-wide inline-block text-center min-w-[85px] shadow-2xs ${
-                          asset.status === 'Assigned' 
-                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/80' 
-                            : 'bg-amber-50 text-amber-600 border border-amber-200/80'
-                        }`}>
+                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-wide inline-block text-center min-w-[85px] shadow-2xs ${asset.status === 'Assigned'
+                            ? 'bg-blue-50 text-[#1E3A8A] border border-blue-200/60'
+                            : 'bg-rose-50 text-rose-600 border border-rose-200/60'
+                          }`}>
                           {asset.status === 'Assigned' ? 'Active' : 'Under Repair'}
                         </span>
                       </div>
@@ -299,7 +298,7 @@ const EmployeeDashboard = () => {
               )}
             </div>
 
-            <button 
+            <button
               onClick={() => setActiveModal('all_assets')}
               className="w-full py-2.5 border border-slate-100 hover:border-blue-500 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-bold text-blue-600 bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all mt-4"
             >
@@ -312,7 +311,7 @@ const EmployeeDashboard = () => {
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-800">Requests Overview</h3>
-              <button 
+              <button
                 onClick={() => setActiveModal('status')}
                 className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-all"
               >
@@ -338,19 +337,18 @@ const EmployeeDashboard = () => {
                     </tr>
                   ) : (
                     sortedRepairs.slice(0, 3).map(rep => (
-                      <tr 
-                        key={rep.id} 
+                      <tr
+                        key={rep.id}
                         onClick={() => { setSelectedRepairId(rep.id); setActiveModal('status'); }}
                         className="hover:bg-slate-50/40 cursor-pointer transition-all"
                       >
                         <td className="py-3 pr-3 font-bold text-slate-500">{rep.id}</td>
                         <td className="py-3 px-3 font-semibold text-slate-800">{rep.issue}</td>
                         <td className="py-3 px-3">
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold ${
-                            rep.status === 'Resolved' || rep.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' :
-                            rep.status === 'In Progress' ? 'bg-amber-50 text-amber-600' :
-                            rep.status === 'Cancelled' ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600'
-                          }`}>
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold ${rep.status === 'Resolved' || rep.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' :
+                              rep.status === 'In Progress' ? 'bg-amber-50 text-amber-600' :
+                                rep.status === 'Cancelled' ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600'
+                            }`}>
                             {rep.status}
                           </span>
                         </td>
@@ -372,14 +370,14 @@ const EmployeeDashboard = () => {
 
         {/* RIGHT COLUMN: Quick Actions, Announcements, Timeline Activity */}
         <div className="space-y-8">
-          
+
           {/* Quick Actions (2x2 Grid) */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
             <h3 className="text-sm font-bold text-slate-800">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-4">
-              
+
               {/* Action 1 */}
-              <button 
+              <button
                 onClick={() => setActiveModal('raise')}
                 className="p-4 border border-slate-100 hover:border-blue-500 rounded-2xl text-left bg-slate-50/40 hover:bg-white hover:shadow-md hover:shadow-blue-500/5 transition-all space-y-3 group"
               >
@@ -393,7 +391,7 @@ const EmployeeDashboard = () => {
               </button>
 
               {/* Action 2 */}
-              <button 
+              <button
                 onClick={() => setActiveModal('request')}
                 className="p-4 border border-slate-100 hover:border-blue-500 rounded-2xl text-left bg-slate-50/40 hover:bg-white hover:shadow-md hover:shadow-blue-500/5 transition-all space-y-3 group"
               >
@@ -407,7 +405,7 @@ const EmployeeDashboard = () => {
               </button>
 
               {/* Action 3 */}
-              <button 
+              <button
                 onClick={() => setActiveModal('status')}
                 className="p-4 border border-slate-100 hover:border-blue-500 rounded-2xl text-left bg-slate-50/40 hover:bg-white hover:shadow-md hover:shadow-blue-500/5 transition-all space-y-3 group"
               >
@@ -421,7 +419,7 @@ const EmployeeDashboard = () => {
               </button>
 
               {/* Action 4 */}
-              <button 
+              <button
                 onClick={() => setActiveModal('guidelines')}
                 className="p-4 border border-slate-100 hover:border-blue-500 rounded-2xl text-left bg-slate-50/40 hover:bg-white hover:shadow-md hover:shadow-blue-500/5 transition-all space-y-3 group"
               >
@@ -441,7 +439,7 @@ const EmployeeDashboard = () => {
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-800">Recent Announcements</h3>
-              <button 
+              <button
                 onClick={() => setActiveModal('announcements')}
                 className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-all cursor-pointer"
               >
@@ -453,7 +451,7 @@ const EmployeeDashboard = () => {
               <p className="text-xs text-slate-400 font-semibold py-3">No active announcements posted.</p>
             ) : (
               announcements.slice(0, 2).map((ann) => (
-                <div 
+                <div
                   key={ann.id}
                   onClick={() => setActiveModal('announcements')}
                   className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2 relative group hover:bg-white hover:border-blue-500 hover:shadow-sm transition-all cursor-pointer"
@@ -465,9 +463,8 @@ const EmployeeDashboard = () => {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="text-xs font-bold text-slate-800 truncate">{ann.title}</h4>
-                        <span className={`px-2 py-0.5 text-[9px] font-extrabold rounded-md border ${
-                          ann.priority === 'High' || ann.priority === 'Urgent' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-blue-50 text-blue-600 border-blue-200'
-                        }`}>
+                        <span className={`px-2 py-0.5 text-[9px] font-extrabold rounded-md border ${ann.priority === 'High' || ann.priority === 'Urgent' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-blue-50 text-blue-600 border-blue-200'
+                          }`}>
                           {ann.type || 'General'}
                         </span>
                       </div>
@@ -498,16 +495,15 @@ const EmployeeDashboard = () => {
                 myActivities.slice(0, 3).map((act, index) => {
                   const isResolve = act.activity.includes("Resolve") || act.details.includes("resolved");
                   const isAssign = act.activity.includes("Assign") || act.details.includes("assigned");
-                  
+
                   return (
                     <div key={act.id} className="relative group">
                       {/* Timeline circle icon indicator */}
-                      <span className={`absolute -left-[35px] top-0.5 p-1 rounded-full shrink-0 border-2 border-white ring-4 ring-white ${
-                        isResolve ? 'bg-emerald-50 text-emerald-600 ring-emerald-50/50' :
-                        isAssign ? 'bg-blue-50 text-blue-600 ring-blue-50/50' : 'bg-amber-50 text-amber-600 ring-amber-50/50'
-                      }`}>
+                      <span className={`absolute -left-[35px] top-0.5 p-1 rounded-full shrink-0 border-2 border-white ring-4 ring-white ${isResolve ? 'bg-emerald-50 text-emerald-600 ring-emerald-50/50' :
+                          isAssign ? 'bg-blue-50 text-blue-600 ring-blue-50/50' : 'bg-amber-50 text-amber-600 ring-amber-50/50'
+                        }`}>
                         {isResolve ? <CheckCircle2 className="h-3 w-3" /> :
-                         isAssign ? <Briefcase className="h-3 w-3" /> : <Wrench className="h-3 w-3" />}
+                          isAssign ? <Briefcase className="h-3 w-3" /> : <Wrench className="h-3 w-3" />}
                       </span>
                       <div>
                         <h4 className="text-[11px] font-bold text-slate-800 leading-normal">{act.details}</h4>
@@ -542,7 +538,7 @@ const EmployeeDashboard = () => {
             </div>
 
             <form onSubmit={handleRaiseSubmit} className="space-y-4">
-              
+
               <div className="space-y-1">
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1">Select Asset / Device *</label>
                 <select
@@ -643,7 +639,7 @@ const EmployeeDashboard = () => {
             </div>
 
             <form onSubmit={handleRequestAssetSubmit} className="space-y-4">
-              
+
               <div className="space-y-1">
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1">Required Asset Type *</label>
                 <select
@@ -723,14 +719,14 @@ const EmployeeDashboard = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
           <div className="bg-white border border-slate-200 rounded-[2rem] max-w-4xl w-full p-6 shadow-2xl flex flex-col md:flex-row gap-6 relative z-10 animate-scale-in max-h-[85vh] overflow-y-auto">
-            
+
             {/* Left Hand: Ticket Listing */}
             <div className="md:w-5/12 border-r border-slate-100 pr-0 md:pr-6 space-y-4">
               <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
                 <ClipboardList className="h-5 w-5 text-purple-600" />
                 <span>My Requests Directory</span>
               </h3>
-              
+
               <div className="space-y-2.5 overflow-y-auto max-h-[50vh] pr-1">
                 {sortedRepairs.length === 0 ? (
                   <p className="text-xs text-slate-400 py-6 text-center">No tickets found.</p>
@@ -739,19 +735,17 @@ const EmployeeDashboard = () => {
                     <div
                       key={rep.id}
                       onClick={() => setSelectedRepairId(rep.id)}
-                      className={`p-3 border rounded-2xl cursor-pointer text-left transition-all ${
-                        selectedRepairId === rep.id 
-                          ? 'bg-purple-50/50 border-purple-400' 
+                      className={`p-3 border rounded-2xl cursor-pointer text-left transition-all ${selectedRepairId === rep.id
+                          ? 'bg-purple-50/50 border-purple-400'
                           : 'border-slate-150 hover:bg-slate-50/40 bg-slate-50/20'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{rep.id}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-extrabold uppercase ${
-                          rep.status === 'Resolved' || rep.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' :
-                          rep.status === 'In Progress' ? 'bg-amber-50 text-amber-600' :
-                          rep.status === 'Cancelled' ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600'
-                        }`}>{rep.status}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-extrabold uppercase ${rep.status === 'Resolved' || rep.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' :
+                            rep.status === 'In Progress' ? 'bg-amber-50 text-amber-600' :
+                              rep.status === 'Cancelled' ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600'
+                          }`}>{rep.status}</span>
                       </div>
                       <h4 className="text-xs font-bold text-slate-800 mt-1 truncate">{rep.issue}</h4>
                       <p className="text-[9px] text-slate-400 font-bold mt-1">{rep.requestDate.split(' ')[0]}</p>
@@ -788,7 +782,7 @@ const EmployeeDashboard = () => {
                     {/* Visual Progress Stepper Bar */}
                     <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
                       <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Ticket Progress Tracker</p>
-                      
+
                       <div className="flex items-center justify-between relative px-2">
                         {/* Step 1: Raised */}
                         <div className="flex flex-col items-center gap-1 z-10">
@@ -800,11 +794,10 @@ const EmployeeDashboard = () => {
 
                         {/* Step 2: Accepted */}
                         <div className="flex flex-col items-center gap-1 z-10">
-                          <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
-                            selectedRepairDetails.acceptedBy 
-                              ? 'bg-emerald-600 text-white shadow-xs' 
+                          <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${selectedRepairDetails.acceptedBy
+                              ? 'bg-emerald-600 text-white shadow-xs'
                               : 'bg-slate-200 text-slate-400'
-                          }`}>
+                            }`}>
                             2
                           </div>
                           <span className={`text-[9px] font-bold ${selectedRepairDetails.acceptedBy ? 'text-emerald-700' : 'text-slate-400'}`}>
@@ -814,11 +807,10 @@ const EmployeeDashboard = () => {
 
                         {/* Step 3: In Progress */}
                         <div className="flex flex-col items-center gap-1 z-10">
-                          <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
-                            selectedRepairDetails.status === 'In Progress' || selectedRepairDetails.status === 'Awaiting Parts' || selectedRepairDetails.status === 'Completed' || selectedRepairDetails.status === 'Resolved'
-                              ? 'bg-blue-600 text-white shadow-xs' 
+                          <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${selectedRepairDetails.status === 'In Progress' || selectedRepairDetails.status === 'Awaiting Parts' || selectedRepairDetails.status === 'Completed' || selectedRepairDetails.status === 'Resolved'
+                              ? 'bg-blue-600 text-white shadow-xs'
                               : 'bg-slate-200 text-slate-400'
-                          }`}>
+                            }`}>
                             3
                           </div>
                           <span className={`text-[9px] font-bold ${selectedRepairDetails.status === 'In Progress' || selectedRepairDetails.status === 'Awaiting Parts' ? 'text-blue-700' : 'text-slate-400'}`}>
@@ -828,11 +820,10 @@ const EmployeeDashboard = () => {
 
                         {/* Step 4: Resolved */}
                         <div className="flex flex-col items-center gap-1 z-10">
-                          <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
-                            selectedRepairDetails.status === 'Completed' || selectedRepairDetails.status === 'Resolved'
-                              ? 'bg-emerald-600 text-white shadow-xs' 
+                          <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${selectedRepairDetails.status === 'Completed' || selectedRepairDetails.status === 'Resolved'
+                              ? 'bg-emerald-600 text-white shadow-xs'
                               : 'bg-slate-200 text-slate-400'
-                          }`}>
+                            }`}>
                             4
                           </div>
                           <span className={`text-[9px] font-bold ${selectedRepairDetails.status === 'Completed' || selectedRepairDetails.status === 'Resolved' ? 'text-emerald-700' : 'text-slate-400'}`}>
@@ -907,7 +898,7 @@ const EmployeeDashboard = () => {
             </div>
 
             <div className="space-y-4 text-xs text-slate-600 leading-relaxed max-h-[50vh] overflow-y-auto pr-1">
-              
+
               {/* Official Admin PDF Banner */}
               <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-start gap-3 min-w-0">
@@ -1031,18 +1022,17 @@ const EmployeeDashboard = () => {
                       <td className="py-3.5 px-3 font-medium text-slate-600">{asset.serialNumber}</td>
                       <td className="py-3.5 px-3 text-slate-500 font-semibold">{asset.purchaseDate || '10 May 2024'}</td>
                       <td className="py-3.5 px-3">
-                        <span className={`px-2.5 py-0.5 rounded-lg text-[9px] font-extrabold uppercase ${
-                          asset.status === 'Assigned' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-                        }`}>
+                        <span className={`px-2.5 py-0.5 rounded-lg text-[9px] font-extrabold uppercase border ${asset.status === 'Assigned' ? 'bg-blue-50 text-[#1E3A8A] border-blue-200/60' : 'bg-rose-50 text-rose-600 border-rose-200/60'
+                          }`}>
                           {asset.status === 'Assigned' ? 'Active' : 'Under Repair'}
                         </span>
                       </td>
                       <td className="py-3.5 pl-3 text-right">
                         <button
-                          onClick={() => { 
+                          onClick={() => {
                             setRepairAssetId(asset.id);
-                            setRepairIssue(`Issue with ${asset.brand} ${asset.model}`); 
-                            setActiveModal('raise'); 
+                            setRepairIssue(`Issue with ${asset.brand} ${asset.model}`);
+                            setActiveModal('raise');
                           }}
                           className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-[10px] font-bold transition-all"
                         >
@@ -1092,9 +1082,8 @@ const EmployeeDashboard = () => {
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <h4 className="font-extrabold text-slate-800 text-xs">{ann.title}</h4>
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 text-[9px] font-extrabold rounded-md border ${
-                          ann.priority === 'High' || ann.priority === 'Urgent' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-blue-50 text-blue-600 border-blue-200'
-                        }`}>
+                        <span className={`px-2 py-0.5 text-[9px] font-extrabold rounded-md border ${ann.priority === 'High' || ann.priority === 'Urgent' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-blue-50 text-blue-600 border-blue-200'
+                          }`}>
                           {ann.type || 'General'}
                         </span>
                         <span className="text-[10px] text-slate-400 font-bold">{ann.date}</span>

@@ -61,18 +61,18 @@ const Header = () => {
   const isEmployee = currentUser?.role === 'Employee';
 
   return (
-    <header className="bg-white border-b border-slate-200/80 h-14 px-5 flex items-center justify-between sticky top-0 z-30 shadow-xs relative select-none">
+    <header className="bg-white border-b border-[#E6DED8] h-14 px-5 flex items-center justify-between sticky top-0 z-30 shadow-xs relative select-none">
       {/* Brand & Left Title */}
       <div className="flex items-center">
         {isEmployee ? (
           /* Branding Block */
           <div className="flex items-center gap-2.5 shrink-0 cursor-pointer" onClick={() => navigate('/employee')}>
-            <div className="shrink-0 overflow-hidden rounded-xl bg-white border border-slate-200 p-0.5">
+            <div className="shrink-0 overflow-hidden rounded-xl bg-white border border-[#E6DED8] p-0.5">
               <QuadrantLogo className="h-7 w-7 object-cover" />
             </div>
             <div className="text-left">
-              <h1 className="font-extrabold text-xs text-slate-800 leading-tight">Quadrant</h1>
-              <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">IT Services</p>
+              <h1 className="font-extrabold text-xs text-[#1F2937] leading-tight">Quadrant</h1>
+              <p className="text-[9px] text-[#6B7280] font-semibold uppercase tracking-wider">IT Services</p>
             </div>
           </div>
         ) : (
@@ -81,34 +81,32 @@ const Header = () => {
             <button className="text-slate-500 hover:text-slate-800 lg:hidden mr-2 cursor-pointer">
               <Menu className="h-5 w-5" />
             </button>
-            <h2 className="text-lg font-extrabold text-slate-800 tracking-tight">{getPageTitle()}</h2>
+            <h2 className="text-lg font-extrabold text-[#1F2937] tracking-tight">{getPageTitle()}</h2>
           </>
         )}
       </div>
 
       {/* Center Capsule Navigation Links (Only for Employee Portal) */}
       {isEmployee && (
-        <nav className="flex items-center gap-1 bg-slate-50 border border-slate-200/60 p-1 rounded-2xl absolute left-1/2 -translate-x-1/2 shadow-inner">
-          <NavLink 
-            to="/employee" 
+        <nav className="flex items-center gap-1 bg-[#FAF8F6] border border-[#E6DED8] p-1 rounded-2xl absolute left-1/2 -translate-x-1/2 shadow-inner">
+          <NavLink
+            to="/employee"
             end
-            className={({ isActive }) => 
-              `py-2 px-5 transition-all duration-300 ease-out rounded-xl text-xs font-bold flex items-center gap-1.5 active:scale-95 ${
-                isActive 
-                  ? 'bg-white text-blue-600 shadow-sm border border-slate-100' 
-                  : 'text-slate-450 hover:text-blue-500 hover:bg-slate-100/50'
+            className={({ isActive }) =>
+              `py-2 px-5 transition-all duration-300 ease-out rounded-xl text-xs font-bold flex items-center gap-1.5 active:scale-95 ${isActive
+                ? 'bg-white text-[#1E3A8A] shadow-sm border border-[#E6DED8]'
+                : 'text-[#6B7280] hover:text-[#1E3A8A] hover:bg-[#EEF4FF]'
               }`
             }
           >
             Dashboard
           </NavLink>
-          <NavLink 
+          <NavLink
             to="/employee/settings"
-            className={({ isActive }) => 
-              `py-2 px-5 transition-all duration-300 ease-out rounded-xl text-xs font-bold flex items-center gap-1.5 active:scale-95 ${
-                isActive 
-                  ? 'bg-white text-blue-600 shadow-sm border border-slate-100' 
-                  : 'text-slate-450 hover:text-blue-500 hover:bg-slate-100/50'
+            className={({ isActive }) =>
+              `py-2 px-5 transition-all duration-300 ease-out rounded-xl text-xs font-bold flex items-center gap-1.5 active:scale-95 ${isActive
+                ? 'bg-white text-[#1E3A8A] shadow-sm border border-[#E6DED8]'
+                : 'text-[#6B7280] hover:text-[#1E3A8A] hover:bg-[#EEF4FF]'
               }`
             }
           >
@@ -135,7 +133,7 @@ const Header = () => {
 
         {/* Notifications Bell */}
         <div className="relative" ref={notifRef}>
-          <button 
+          <button
             onClick={() => setShowNotifications(prev => !prev)}
             className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-all relative border border-slate-100 cursor-pointer"
           >
@@ -163,15 +161,14 @@ const Header = () => {
                   </div>
                 ) : (
                   notifications.map((notif) => (
-                    <div 
-                      key={notif.id} 
+                    <div
+                      key={notif.id}
                       className={`p-4 transition-all hover:bg-slate-50 flex items-start gap-3 ${!notif.read ? 'bg-blue-50/20' : ''}`}
                     >
-                      <span className={`h-2.5 w-2.5 rounded-full shrink-0 mt-1.5 ${
-                        notif.type === 'success' ? 'bg-green-500' :
-                        notif.type === 'warning' ? 'bg-amber-500' :
-                        notif.type === 'alert' ? 'bg-red-500' : 'bg-blue-500'
-                      }`} />
+                      <span className={`h-2.5 w-2.5 rounded-full shrink-0 mt-1.5 ${notif.type === 'success' ? 'bg-green-500' :
+                          notif.type === 'warning' ? 'bg-amber-500' :
+                            notif.type === 'alert' ? 'bg-red-500' : 'bg-blue-500'
+                        }`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-bold text-slate-800 truncate">{notif.title}</p>
@@ -184,7 +181,7 @@ const Header = () => {
                 )}
               </div>
               <div className="p-3 bg-slate-50 border-t border-slate-100 text-center">
-                <button 
+                <button
                   onClick={() => setShowNotifications(false)}
                   className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-all cursor-pointer"
                 >
@@ -233,11 +230,10 @@ const Header = () => {
                         setShowAdminMenu(false);
                         showToast("Active Admin set to Teja Adusumilli");
                       }}
-                      className={`w-full p-2.5 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
-                        currentUser.name.includes('Teja')
+                      className={`w-full p-2.5 rounded-xl flex items-center justify-between transition-all cursor-pointer ${currentUser.name.includes('Teja')
                           ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200'
                           : 'hover:bg-slate-50 text-slate-700 font-semibold'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2.5">
                         <Avatar name="Teja Adusumilli" className="h-7 w-7 rounded-lg" />
@@ -258,11 +254,10 @@ const Header = () => {
                         setShowAdminMenu(false);
                         showToast("Active Admin set to Rakesh Reddy");
                       }}
-                      className={`w-full p-2.5 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
-                        currentUser.name.includes('Rakesh')
+                      className={`w-full p-2.5 rounded-xl flex items-center justify-between transition-all cursor-pointer ${currentUser.name.includes('Rakesh')
                           ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200'
                           : 'hover:bg-slate-50 text-slate-700 font-semibold'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2.5">
                         <Avatar name="Rakesh Reddy" className="h-7 w-7 rounded-lg" />

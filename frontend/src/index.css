@@ -2,10 +2,26 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+@theme {
+  --color-slate-50: #FFFFFF;
+  --color-slate-100: #F4F1EE;
+  --color-slate-200: #E6DED8;
+  --color-slate-300: #E6DED8;
+  --color-slate-400: #64748B;
+  --color-slate-500: #6B7280;
+  --color-slate-600: #6B7280;
+  --color-slate-800: #1F2937;
+  --color-slate-900: #1F2937;
+
+  --color-blue-50: #EEF4FF;
+  --color-blue-500: #1E3A8A;
+  --color-blue-600: #1E3A8A;
+}
+
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #f8fafc;
-  color: #1e293b;
+  background-color: #F4F1EE;
+  color: #1F2937;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -40,6 +56,7 @@ body {
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -51,6 +68,7 @@ body {
     transform: scale(0.95);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
@@ -64,4 +82,3 @@ body {
 .animate-scale-in {
   animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-

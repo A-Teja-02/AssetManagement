@@ -122,7 +122,7 @@ const Dashboard = () => {
 
   // 2. Prepare Recharts Donut data
   const chartData = [
-    { name: 'Assigned', value: assignedCount, color: '#2563eb' },
+    { name: 'Assigned', value: assignedCount, color: '#1E3A8A' },
     { name: 'Available', value: availableCount, color: '#10b981' },
     { name: 'Under Repair', value: repairCount, color: '#f59e0b' },
     { name: 'Disposed', value: disposedCount, color: '#ef4444' }
@@ -210,12 +210,12 @@ const Dashboard = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* 5 KPI Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 justify-between">
-        <MetricCard icon={Laptop} title="Total Assets" value={totalCount} color="blue" linkTo="/assets" />
-        <MetricCard icon={CheckCircle} title="Assigned Assets" value={assignedCount} color="green" linkTo="/assets" />
-        <MetricCard icon={TrendingUp} title="Available Assets" value={availableCount} color="orange" linkTo="/assets" />
-        <MetricCard icon={Wrench} title="Under Repair" value={repairCount} color="red" linkTo="/repairs" />
-        <MetricCard icon={Trash2} title="Disposed Assets" value={disposedCount} color="purple" linkTo="/assets" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
+        <MetricCard icon={Laptop} title="Total Assets" value={totalCount} color="blue" linkTo="/assets" showLink />
+        <MetricCard icon={CheckCircle} title="Assigned Assets" value={assignedCount} color="green" linkTo="/assets" showLink />
+        <MetricCard icon={TrendingUp} title="Available Assets" value={availableCount} color="orange" linkTo="/assets" showLink />
+        <MetricCard icon={Wrench} title="Under Repair" value={repairCount} color="red" linkTo="/repairs" showLink />
+        <MetricCard icon={Trash2} title="Disposed Assets" value={disposedCount} color="purple" linkTo="/assets" showLink />
       </div>
 
       {/* Charts & Status Section: Only 2 Cards (Assets Overview & Announcements) */}
@@ -223,12 +223,12 @@ const Dashboard = () => {
         {/* Card 1: Assets Overview (Recharts Donut Chart) */}
         <div
           onClick={() => navigate('/categories')}
-          className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between cursor-pointer hover:shadow-md hover:border-blue-300 transition-all group min-h-[340px]"
+          className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between cursor-pointer transition-all min-h-[340px]"
           title="Click to view Categories & Quantities"
         >
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-base font-bold text-slate-800 group-hover:text-blue-600 transition-colors">Assets Overview</h3>
-            <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100/60 group-hover:bg-blue-600 group-hover:text-white transition-all">View Categories &rarr;</span>
+            <h3 className="text-base font-bold text-slate-800">Assets Overview</h3>
+            <span className="text-[10px] font-extrabold text-[#1E3A8A] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100/60">View Categories &rarr;</span>
           </div>
           <div className="relative h-56 flex items-center justify-center my-2">
             <ResponsiveContainer width="100%" height="100%">
@@ -724,10 +724,10 @@ const Dashboard = () => {
               </div>
               <div className="flex justify-between border-b border-slate-50 pb-2">
                 <span className="font-semibold text-slate-400">Status</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${selectedAsset?.status === 'Assigned' ? 'bg-emerald-50 text-emerald-600' :
-                  selectedAsset?.status === 'Available' ? 'bg-blue-50 text-blue-600' :
-                    selectedAsset?.status === 'Under Repair' ? 'bg-amber-50 text-amber-600' :
-                      'bg-slate-100 text-slate-600'
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${selectedAsset?.status === 'Assigned' ? 'bg-blue-50 text-[#1E3A8A] border-blue-200/60' :
+                  selectedAsset?.status === 'Available' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/60' :
+                    selectedAsset?.status === 'Under Repair' ? 'bg-rose-50 text-rose-600 border-rose-100/60' :
+                      'bg-slate-900 text-slate-50 border border-slate-900'
                   }`}>{selectedAsset?.status}</span>
               </div>
               <div className="flex justify-between border-b border-slate-50 pb-2">
