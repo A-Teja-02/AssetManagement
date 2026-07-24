@@ -5,6 +5,7 @@ import Header from '../components/Header';
 import QRScannerModal from '../components/QRScannerModal';
 import { useAssetManager } from '../hooks/useAssetManager';
 import { CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
+import logoImg from '../assets/logo.png';
 
 const DashboardLayout = () => {
   const { currentUser, toast } = useAssetManager();

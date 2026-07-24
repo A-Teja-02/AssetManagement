@@ -87,6 +87,8 @@ const AssignAsset = () => {
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('search'); // search | qr
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
   
   // Form details state
   const [assignDate, setAssignDate] = useState('2026-07-10');
@@ -145,7 +147,31 @@ const AssignAsset = () => {
   };
 
   // Filter recent assignments list for the history log table (reversed to show latest first)
-  const recentAssignmentsLogs = [...activity].reverse().filter(act => act.activity === "Assign Asset");
+  const recentAssignmentsLogs = [...activity]
+    .reverse()
+    .filter(act => act.activity === "Assign Asset")
+    .filter(act => {
+      if (!act.dateTime) return true;
+      try {
+        const logDate = new Date(act.dateTime);
+        if (isNaN(logDate.getTime())) return true;
+
+        if (filterStartDate) {
+          const [yr, mo, dy] = filterStartDate.split('-').map(Number);
+          const start = new Date(yr, mo - 1, dy, 0, 0, 0, 0);
+          if (logDate < start) return false;
+        }
+
+        if (filterEndDate) {
+          const [yr, mo, dy] = filterEndDate.split('-').map(Number);
+          const end = new Date(yr, mo - 1, dy, 23, 59, 59, 999);
+          if (logDate > end) return false;
+        }
+      } catch (e) {
+        console.error("Error parsing date:", e);
+      }
+      return true;
+    });
 
   const formatDateWithYear = (dateStr) => {
     if (!dateStr) return '-';
@@ -157,6 +183,57 @@ const AssignAsset = () => {
       return `${parts[0]}, ${parts[1]}`;
     }
     return parts[0];
+  };
+
+  const handleExportCSV = () => {
+    if (recentAssignmentsLogs.length === 0) {
+      showToast("No data available to export.", "warning");
+      return;
+    }
+
+    const headers = ["Employee Name", "Employee ID", "Asset", "Assigned By", "Assignment Date", "Details"];
+    const rows = recentAssignmentsLogs.map(log => {
+      const empIdMatch = log.details.match(/\(([^)]+)\)$/) || log.details.match(/\(([^)]+)\)/);
+      const empId = empIdMatch ? empIdMatch[1] : '';
+      const emp = employees.find(e => e.id === empId);
+
+      const nameMatch = log.details.match(/to\s+([^(]+)/);
+      const extractedName = nameMatch ? nameMatch[1].trim() : 'Employee';
+      const displayName = emp ? emp.name : extractedName;
+
+      const assetIdMatch = log.details.match(/asset\s+(\S+)/i);
+      const assetId = assetIdMatch ? assetIdMatch[1] : '';
+      const assetObj = assets.find(a => a.id === assetId);
+      const assetLabel = assetObj ? `${assetObj.brand} ${assetObj.model} (${assetId})` : (assetId || 'Asset');
+
+      const dateStr = formatDateWithYear(log.dateTime);
+      const cleanDetails = log.details.replace(/"/g, '""');
+
+      return [
+        displayName,
+        empId || 'EMP002',
+        assetLabel,
+        `${log.user} (Admin)`,
+        dateStr,
+        cleanDetails
+      ];
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(val => `"${val}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Recent_Assignments_Export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast("Successfully exported assignments to CSV!");
   };
 
   return (
@@ -537,8 +614,53 @@ const AssignAsset = () => {
       </div>
 
       {/* Bottom Section: Recent Assignments logs list */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
-        <h3 className="text-base font-bold text-slate-800">Recent Assignments</h3>
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h3 className="text-base font-bold text-slate-800">Assignments</h3>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-2xs">
+              <Calendar className="h-3.5 w-3.5 text-slate-400" />
+              <input
+                type="date"
+                value={filterStartDate}
+                onChange={(e) => setFilterStartDate(e.target.value)}
+                placeholder="Start Date"
+                className="bg-transparent border-0 outline-none text-xs text-slate-600 focus:ring-0 p-0 cursor-pointer"
+              />
+            </div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">to</span>
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-2xs">
+              <Calendar className="h-3.5 w-3.5 text-slate-400" />
+              <input
+                type="date"
+                value={filterEndDate}
+                onChange={(e) => setFilterEndDate(e.target.value)}
+                placeholder="End Date"
+                className="bg-transparent border-0 outline-none text-xs text-slate-600 focus:ring-0 p-0 cursor-pointer"
+              />
+            </div>
+            {(filterStartDate || filterEndDate) && (
+              <button
+                onClick={() => {
+                  setFilterStartDate('');
+                  setFilterEndDate('');
+                }}
+                className="text-xs font-semibold text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1 hover:underline cursor-pointer"
+              >
+                Clear
+              </button>
+            )}
+            <button
+              onClick={handleExportCSV}
+              className="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+              title="Export filtered assignments to CSV"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              <span>Export CSV</span>
+            </button>
+          </div>
+        </div>
         
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -552,48 +674,56 @@ const AssignAsset = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-              {recentAssignmentsLogs.slice(0, 5).map((log, index) => {
-                // Extract detail information: matches anything inside parentheses at the end, e.g. (EMP001) or (QEMP002)
-                const empIdMatch = log.details.match(/\(([^)]+)\)$/) || log.details.match(/\(([^)]+)\)/);
-                const empId = empIdMatch ? empIdMatch[1] : '';
-                const emp = employees.find(e => e.id === empId);
+              {recentAssignmentsLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-slate-400 font-semibold">
+                    No assignments found within this date range.
+                  </td>
+                </tr>
+              ) : (
+                recentAssignmentsLogs.slice(0, 5).map((log, index) => {
+                  // Extract detail information: matches anything inside parentheses at the end, e.g. (EMP001) or (QEMP002)
+                  const empIdMatch = log.details.match(/\(([^)]+)\)$/) || log.details.match(/\(([^)]+)\)/);
+                  const empId = empIdMatch ? empIdMatch[1] : '';
+                  const emp = employees.find(e => e.id === empId);
 
-                // Extract name from log details before the parentheses, e.g. "to Rahul Sharma (QEMP002)"
-                const nameMatch = log.details.match(/to\s+([^(]+)/);
-                const extractedName = nameMatch ? nameMatch[1].trim() : 'Employee';
-                const displayName = emp ? emp.name : extractedName;
+                  // Extract name from log details before the parentheses, e.g. "to Rahul Sharma (QEMP002)"
+                  const nameMatch = log.details.match(/to\s+([^(]+)/);
+                  const extractedName = nameMatch ? nameMatch[1].trim() : 'Employee';
+                  const displayName = emp ? emp.name : extractedName;
 
-                // Extract asset ID from details, e.g. "Assigned asset LT0001 to..."
-                const assetIdMatch = log.details.match(/asset\s+(\S+)/i);
-                const assetId = assetIdMatch ? assetIdMatch[1] : '';
-                const assetObj = assets.find(a => a.id === assetId);
-                const assetLabel = assetObj ? `${assetObj.brand} ${assetObj.model} (${assetId})` : (assetId || 'Asset');
+                  // Extract asset ID from details, e.g. "Assigned asset LT0001 to..."
+                  const assetIdMatch = log.details.match(/asset\s+(\S+)/i);
+                  const assetId = assetIdMatch ? assetIdMatch[1] : '';
+                  const assetObj = assets.find(a => a.id === assetId);
+                  const assetLabel = assetObj ? `${assetObj.brand} ${assetObj.model} (${assetId})` : (assetId || 'Asset');
 
-                return (
-                  <tr key={index} className="hover:bg-slate-50/50">
-                    <td className="py-4 pr-4 font-bold">
-                      <div className="flex items-center gap-2">
-                        <Avatar name={displayName} className="h-6 w-6 rounded-full" textSize="text-[8px]" />
-                        <span>{displayName} ({empId || 'EMP002'})</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 font-bold text-blue-600">
-                      {assetLabel}
-                    </td>
-                    <td className="py-4 px-4 font-semibold text-slate-600">{log.user} (Admin)</td>
-                    <td className="py-4 px-4 text-slate-500">{formatDateWithYear(log.dateTime)}</td>
-                    <td className="py-4 pl-4 text-right">
-                      <button 
-                        onClick={() => showToast(`Details: ${log.details}`, "info")}
-                        className="p-1.5 hover:bg-slate-100 rounded-lg text-blue-600"
-                        title="View Details"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+                  return (
+                    <tr key={index} className="hover:bg-slate-50/50">
+                      <td className="py-4 pr-4 font-bold">
+                        <div className="flex items-center gap-2">
+                          <Avatar name={displayName} className="h-6 w-6 rounded-full" textSize="text-[8px]" />
+                          <span>{displayName} ({empId || 'EMP002'})</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 font-bold text-blue-600">
+                        {assetLabel}
+                      </td>
+                      <td className="py-4 px-4 font-semibold text-slate-600">{log.user} (Admin)</td>
+                      <td className="py-4 px-4 text-slate-500">{formatDateWithYear(log.dateTime)}</td>
+                      <td className="py-4 pl-4 text-right">
+                        <button 
+                          onClick={() => showToast(`Details: ${log.details}`, "info")}
+                          className="p-1.5 hover:bg-slate-100 rounded-lg text-blue-600"
+                          title="View Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

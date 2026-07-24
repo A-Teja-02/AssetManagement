@@ -493,6 +493,12 @@ export const AssetProvider = ({ children }) => {
         message: upd.message.replace(/Rakesh Kumar/g, 'Rakesh Reddy')
       }))
     }));
+    const mockRepairs = [
+      {
+        id: "REQ1003",
+        assetId: "AST1001",
+        reportedBy: "EMP1005",
+        issue: "Laptop heating issue",
         description: "The laptop heats up significantly within 10 minutes of use, causing CPU throttling.",
         requestDate: "18 May 2024 11:45 AM",
         priority: "High",
